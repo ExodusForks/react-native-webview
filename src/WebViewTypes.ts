@@ -321,6 +321,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   enableApplePay?: boolean;
   textInteractionEnabled?: boolean;
   mediaCapturePermissionGrantType?: MediaCapturePermissionGrantType;
+  shouldStartLoadTimeout?: number;
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
@@ -573,6 +574,15 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   onCustomMenuSelection?: (event: WebViewEvent) => void;
+
+  /**
+   * Timeout in milliseconds for the shouldStartLoad callback to respond.
+   * If the JS thread is busy and cannot respond within this time, navigation
+   * will be blocked.
+   * The default value is `500`.
+   * @platform ios
+   */
+  shouldStartLoadTimeout?: number;
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
