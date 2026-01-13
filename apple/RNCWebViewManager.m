@@ -113,6 +113,8 @@ RCT_EXPORT_VIEW_PROPERTY(enableApplePay, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(menuItems, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(onCustomMenuSelection, RCTDirectEventBlock)
 
+RCT_EXPORT_VIEW_PROPERTY(shouldStartLoadTimeout, NSInteger)
+
 RCT_EXPORT_METHOD(postMessage:(nonnull NSNumber *)reactTag message:(NSString *)message)
 {
   [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
@@ -254,8 +256,10 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
   request[@"lockIdentifier"] = @(_shouldStartLoadLock.condition);
   callback(request);
 
-  // Block the main thread for a maximum of 500ms until the JS thread returns
-  if ([_shouldStartLoadLock lockWhenCondition:0 beforeDate:[NSDate dateWithTimeIntervalSinceNow:.50]]) {
+  NSInteger timeoutMs = webView.shouldStartLoadTimeout;
+  NSTimeInterval timeoutSeconds = timeoutMs / 1000.0;
+
+  if ([_shouldStartLoadLock lockWhenCondition:0 beforeDate:[NSDate dateWithTimeIntervalSinceNow:timeoutSeconds]]) {
     BOOL returnValue = _shouldStartLoad;
     [_shouldStartLoadLock unlock];
     _shouldStartLoadLock = nil;

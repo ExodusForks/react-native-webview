@@ -74,7 +74,8 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>((props, ref) => {
     cacheEnabled = true,
     originWhitelist = defaultOriginWhitelist,
     deeplinkWhitelist = defaultDeeplinkWhitelist,
-    textInteractionEnabled= true,
+    textInteractionEnabled = true,
+    shouldStartLoadTimeout = 500,
     injectedJavaScript,
     injectedJavaScriptBeforeContentLoaded,
     startInLoadingState,
@@ -208,6 +209,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>((props, ref) => {
       mediaPlaybackRequiresUserAction={mediaPlaybackRequiresUserAction}
       ref={webViewRef}
       sharedCookiesEnabled={sharedCookiesEnabled}
+      shouldStartLoadTimeout={shouldStartLoadTimeout}
       // TODO: find a better way to type this.
       source={source}
       style={webViewStyles}
