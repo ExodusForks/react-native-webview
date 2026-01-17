@@ -1106,6 +1106,21 @@ RCTAutoInsetsProtocol>
   NSURLRequest *request = navigationAction.request;
   BOOL isTopFrame = [request.URL isEqual:request.mainDocumentURL];
   
+  void (^allowNavigation)(void) = ^{
+    if (self->_onLoadingStart) {
+      // We have this check to filter out iframe requests and whatnot
+      if (isTopFrame) {
+        NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+        [event addEntriesFromDictionary: @{
+            @"url": (request.URL).absoluteString,
+            @"navigationType": navigationTypes[@(navigationType)]
+          }];
+          self->_onLoadingStart(event);
+      }
+    }
+    decisionHandler(WKNavigationActionPolicyAllow);
+  };
+
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
     if (request.mainDocumentURL) {
@@ -1126,20 +1141,8 @@ RCTAutoInsetsProtocol>
     }
   }
   
-  if (_onLoadingStart) {
-    // We have this check to filter out iframe requests and whatnot
-    if (isTopFrame) {
-      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-      [event addEntriesFromDictionary: @{
-        @"url": (request.URL).absoluteString,
-        @"navigationType": navigationTypes[@(navigationType)]
-      }];
-      _onLoadingStart(event);
-    }
-  }
-  
   // Allow all navigation by default
-  decisionHandler(WKNavigationActionPolicyAllow);
+  allowNavigation();
 }
 
 /**
