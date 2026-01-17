@@ -9,6 +9,7 @@
 #import <React/RCTConvert.h>
 #import <React/RCTAutoInsetsProtocol.h>
 #import "RNCWKProcessPoolManager.h"
+#import "RNCWebViewDecisionManager.h"
 #if !TARGET_OS_OSX
 #import <UIKit/UIKit.h>
 #else
@@ -1122,6 +1123,16 @@ RCTAutoInsetsProtocol>
   };
 
   if (_onShouldStartLoadWithRequest) {
+    int lockIdentifier = [[RNCWebViewDecisionManager getInstance] setDecisionHandler:^(BOOL shouldStart) {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (!shouldStart) {
+          decisionHandler(WKNavigationActionPolicyCancel);
+          return;
+        }
+        allowNavigation();
+      });
+    }];
+
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
     if (request.mainDocumentURL) {
       [event addEntriesFromDictionary: @{
@@ -1131,14 +1142,11 @@ RCTAutoInsetsProtocol>
     [event addEntriesFromDictionary: @{
       @"url": (request.URL).absoluteString,
       @"navigationType": navigationTypes[@(navigationType)],
-      @"isTopFrame": @(isTopFrame)
+      @"isTopFrame": @(isTopFrame),
+      @"lockIdentifier": @(lockIdentifier)
     }];
-    if (![self.delegate webView:self
-      shouldStartLoadForRequest:event
-                   withCallback:_onShouldStartLoadWithRequest]) {
-      decisionHandler(WKNavigationActionPolicyCancel);
-      return;
-    }
+    _onShouldStartLoadWithRequest(event);
+    return;
   }
   
   // Allow all navigation by default
