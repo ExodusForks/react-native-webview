@@ -239,9 +239,9 @@ RCT_EXPORT_METHOD(requestFocus:(nonnull NSNumber *)reactTag)
   }];
 }
 
-RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(NSInteger)lockIdentifier)
+RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(int)lockIdentifier)
 {
-  [[RNCWebViewDecisionManager getInstance] setResult:result forLockIdentifier:(int)lockIdentifier];
+  [[RNCWebViewDecisionManager getInstance] setResult:result forLockIdentifier:lockIdentifier];
 }
 
 @end
