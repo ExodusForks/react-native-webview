@@ -239,8 +239,6 @@ RCT_EXPORT_METHOD(requestFocus:(nonnull NSNumber *)reactTag)
   }];
 }
 
-#pragma mark - Exported methods
-
 RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(NSInteger)lockIdentifier)
 {
   [[RNCWebViewDecisionManager getInstance] setResult:result forLockIdentifier:(int)lockIdentifier];
