@@ -20,14 +20,11 @@ const project = (() => {
 })();
 
 module.exports = {
-  dependencies: {
-    // Help rn-cli find and autolink this library
-    'react-native-webview': {
-      root: __dirname,
-    },
-  },
   dependency: {
     platforms: {
+      ios: {
+        podspecPath: __dirname + '/react-native-webview.podspec',
+      },
       windows: {
         sourceDir: 'windows',
         solutionFile: 'ReactNativeWebView.sln',
