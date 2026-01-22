@@ -1,23 +1,20 @@
 const project = (() => {
-  const fs = require('fs');
   const path = require('path');
   try {
-    const {
-      androidManifestPath,
-      iosProjectPath,
-    } = require('react-native-test-app');
-    return {
+    const { configureProjects } = require('react-native-test-app');
+    return configureProjects({
       android: {
         sourceDir: path.join('example', 'android'),
-        manifestPath: androidManifestPath(
-          path.join(__dirname, 'example', 'android'),
-        ),
       },
       ios: {
-        project: iosProjectPath('example/ios'),
+        sourceDir: 'example/ios',
       },
-    };
-  } catch (_) {
+      windows: {
+        sourceDir: path.join('example', 'windows'),
+        solutionFile: path.join('example', 'windows', 'WebviewExample.sln'),
+      },
+    });
+  } catch (e) {
     return undefined;
   }
 })();
@@ -31,6 +28,16 @@ module.exports = {
   },
   dependency: {
     platforms: {
+      windows: {
+        sourceDir: 'windows',
+        solutionFile: 'ReactNativeWebView.sln',
+        projects: [
+          {
+            projectFile: 'ReactNativeWebView/ReactNativeWebView.vcxproj',
+            directDependency: true,
+          },
+        ],
+      },
     },
   },
   ...(project ? { project } : undefined),

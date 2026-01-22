@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -18,8 +18,15 @@ import Uploads from './examples/Uploads';
 import Injection from './examples/Injection';
 import LocalPageLoad from './examples/LocalPageLoad';
 import Messaging from './examples/Messaging';
+import MultiMessaging from './examples/MultiMessaging';
 import NativeWebpage from './examples/NativeWebpage';
 import ApplePay from './examples/ApplePay';
+import GooglePay from './examples/GooglePay';
+import CustomMenu from './examples/CustomMenu';
+import OpenWindow from './examples/OpenWindow';
+import SuppressMenuItems from './examples/Suppress';
+import ClearData from './examples/ClearData';
+import SslError from './examples/SslError';
 
 const TESTS = {
   Messaging: {
@@ -28,6 +35,14 @@ const TESTS = {
     description: 'js-webview postMessage messaging test',
     render() {
       return <Messaging />;
+    },
+  },
+  MultiMessaging: {
+    title: 'MultiMessaging',
+    testId: 'multimessaging',
+    description: 'Multi js-webview postMessage messaging test',
+    render() {
+      return <MultiMessaging />;
     },
   },
   Alerts: {
@@ -52,6 +67,14 @@ const TESTS = {
     description: 'Background color test',
     render() {
       return <Background />;
+    },
+  },
+  ClearData: {
+    title: 'ClearData',
+    testId: 'clearData',
+    description: 'Clear data test',
+    render() {
+      return <ClearData />;
     },
   },
   Downloads: {
@@ -101,11 +124,54 @@ const TESTS = {
     render() {
       return <ApplePay />;
     },
-  }
+  },
+  GooglePay: {
+    title: 'Google Pay ',
+    testId: 'GooglePay',
+    description: 'Test to open a Google Pay supported page',
+    render() {
+      return <GooglePay />;
+    },
+  },
+  CustomMenu: {
+    title: 'Custom Menu',
+    testId: 'CustomMenu',
+    description: 'Test to custom context menu shown on highlighting text',
+    render() {
+      return <CustomMenu />;
+    },
+  },
+  OpenWindow: {
+    title: 'Open Window',
+    testId: 'OpenWindow',
+    description: 'Test to intercept new window events',
+    render() {
+      return <OpenWindow />;
+    },
+  },
+  SuppressMenuItems: {
+    title: 'SuppressMenuItems',
+    testId: 'SuppressMenuItems',
+    description: 'SuppressMenuItems in editable content',
+    render() {
+      return <SuppressMenuItems />;
+    },
+  },
+  SslError: {
+    title: 'SslError',
+    testId: 'SslError',
+    description: 'SSL error test',
+    render() {
+      return <SslError />;
+    },
+  },
 };
 
-type Props = {};
-type State = {restarting: boolean; currentTest: Object};
+interface Props {}
+interface State {
+  restarting: boolean;
+  currentTest: Object;
+}
 
 export default class App extends Component<Props, State> {
   state = {
@@ -114,15 +180,17 @@ export default class App extends Component<Props, State> {
   };
 
   _simulateRestart = () => {
-    this.setState({restarting: true}, () => this.setState({restarting: false}));
+    this.setState({ restarting: true }, () =>
+      this.setState({ restarting: false }),
+    );
   };
 
   _changeTest = (testName) => {
-    this.setState({currentTest: TESTS[testName]});
+    this.setState({ currentTest: TESTS[testName] });
   };
 
   render() {
-    const {restarting, currentTest} = this.state;
+    const { restarting, currentTest } = this.state;
     return (
       <SafeAreaView style={styles.container}>
         <TouchableOpacity
@@ -135,7 +203,8 @@ export default class App extends Component<Props, State> {
           testID="restart_button"
           onPress={this._simulateRestart}
           style={styles.restartButton}
-          activeOpacity={0.6}>
+          activeOpacity={0.6}
+        >
           <Text>Simulate Restart</Text>
         </TouchableOpacity>
 
@@ -183,24 +252,62 @@ export default class App extends Component<Props, State> {
             onPress={() => this._changeTest('Messaging')}
           />
           <Button
+            testID="testType_multimessaging"
+            title="MultiMessaging"
+            onPress={() => this._changeTest('MultiMessaging')}
+          />
+          <Button
             testID="testType_nativeWebpage"
             title="NativeWebpage"
             onPress={() => this._changeTest('NativeWebpage')}
           />
           {Platform.OS === 'ios' && (
-              <Button
-                  testID="testType_applePay"
-                  title="ApplePay"
-                  onPress={() => this._changeTest('ApplePay')}
-              />
+            <Button
+              testID="testType_applePay"
+              title="ApplePay"
+              onPress={() => this._changeTest('ApplePay')}
+            />
           )}
+          {Platform.OS === 'android' && (
+            <Button
+              testID="testType_googlePay"
+              title="GooglePay"
+              onPress={() => this._changeTest('GooglePay')}
+            />
+          )}
+          <Button
+            testID="testType_customMenu"
+            title="CustomMenu"
+            onPress={() => this._changeTest('CustomMenu')}
+          />
+          <Button
+            testID="testType_openwindow"
+            title="OpenWindow"
+            onPress={() => this._changeTest('OpenWindow')}
+          />
+          <Button
+            testID="testType_suppressMenuItems"
+            title="SuppressMenuItems"
+            onPress={() => this._changeTest('SuppressMenuItems')}
+          />
+          <Button
+            testID="testType_clearData"
+            title="ClearData"
+            onPress={() => this._changeTest('ClearData')}
+          />
+          <Button
+            testID="testType_sslError"
+            title="SslError"
+            onPress={() => this._changeTest('SslError')}
+          />
         </View>
 
         {restarting ? null : (
           <View
             testID={`example-${currentTest.testId}`}
             key={currentTest.title}
-            style={styles.exampleContainer}>
+            style={styles.exampleContainer}
+          >
             <Text style={styles.exampleTitle}>{currentTest.title}</Text>
             <Text style={styles.exampleDescription}>
               {currentTest.description}
