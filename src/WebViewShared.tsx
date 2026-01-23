@@ -47,23 +47,45 @@ const matchWithStringList = (
   return Array.prototype.includes.call(prefixes, value);
 };
 
-const extractOrigin = (url: string): string => {
-  const result = /^[A-Za-z][A-Za-z0-9+\-.]+:(\/\/)?[^/]*/.exec(url);
-  return result === null ? '' : result[0];
+// Exodus: Convert whitelist string to RegExp with exact matching (^ and $ anchors)
+const stringWhitelistToRegex = (originWhitelist: string): RegExp =>
+  new RegExp(`^${escapeStringRegexp(originWhitelist).replace(/\\\*/g, '.*')}$`);
+
+// Exodus: Test value against a list of compiled RegExp patterns
+const matchWithRegexList = (
+  compiledRegexList: readonly RegExp[],
+  value: string
+): boolean => {
+  return compiledRegexList.some((x) => x.test(value));
 };
 
-const originWhitelistToRegex = (originWhitelist: string): string =>
-  `^${escapeStringRegexp(originWhitelist).replace(/\\\*/g, '.*')}`;
-
-const passesWhitelist = (compiledWhitelist: readonly string[], url: string) => {
-  const origin = extractOrigin(url);
-  return compiledWhitelist.some((x) => new RegExp(x).test(origin));
-};
-
+// Exodus: Compile whitelist strings into RegExp array for efficient matching
 const compileWhitelist = (
   originWhitelist: readonly string[]
-): readonly string[] =>
-  ['about:blank', ...(originWhitelist || [])].map(originWhitelistToRegex);
+): readonly RegExp[] =>
+  ['about:blank', ...(originWhitelist || [])].map(stringWhitelistToRegex);
+
+// Exodus: Check if URL passes whitelist using native URL API for robust parsing
+// Falls back to href when origin is null (handles data:, blob:, etc.)
+const passesWhitelist = (
+  compiledWhitelist: readonly RegExp[],
+  url: string
+): boolean => {
+  try {
+    const { href, origin } = new URL(url);
+
+    // Check origin first (most common case)
+    if (origin && origin !== 'null') {
+      return matchWithRegexList(compiledWhitelist, origin);
+    }
+
+    // Fallback to href for URLs where origin is null (data:, blob:, javascript:, etc.)
+    return matchWithRegexList(compiledWhitelist, href);
+  } catch {
+    // Malformed URL - fail closed for security
+    return false;
+  }
+};
 
 const createOnShouldStartLoadWithRequest = (
   loadRequest: (
