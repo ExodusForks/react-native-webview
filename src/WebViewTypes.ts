@@ -1,4 +1,4 @@
-import { ReactElement, Component, ComponentProps } from 'react';
+import { ReactElement, Component, ComponentProps, ElementType } from 'react';
 import {
   NativeSyntheticEvent,
   ViewProps,
@@ -782,6 +782,21 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   fraudulentWebsiteWarningEnabled?: boolean;
+
+  /**
+   * Exodus: Minimum iOS version required to use the WebView.
+   * If the device iOS version is below this, the WebView will not render.
+   * Supports complex constraints like "12.5.6 <13, 13.6.1 <14, 14.8.1 <15, 15.7.1"
+   * @platform ios
+   */
+  minimumIOSVersion?: string;
+
+  /**
+   * Exodus: Component to render if the iOS version is not supported.
+   * If not provided, a default error message will be shown.
+   * @platform ios
+   */
+  unsupportedVersionComponent?: ElementType;
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {

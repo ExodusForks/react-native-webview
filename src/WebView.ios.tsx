@@ -4,7 +4,14 @@ import React, {
   useImperativeHandle,
   useRef,
 } from 'react';
-import { Image, View, ImageSourcePropType, HostComponent } from 'react-native';
+import {
+  Image,
+  View,
+  Text,
+  Platform,
+  ImageSourcePropType,
+  HostComponent,
+} from 'react-native';
 import invariant from 'invariant';
 
 import RNCWebView, { Commands, NativeProps } from './RNCWebViewNativeComponent';
@@ -16,6 +23,7 @@ import {
   defaultRenderError,
   defaultRenderLoading,
   useWebViewLogic,
+  versionPasses,
 } from './WebViewShared';
 import {
   IOSWebViewProps,
@@ -37,6 +45,11 @@ const processDecelerationRate = (
   }
   return newDecelerationRate;
 };
+
+// Exodus: Hardcoded minimum iOS versions for security
+// Format: "minVersion <maxVersion, ..." means minVersion <= iOS < maxVersion
+// Last entry has no upper bound
+const hardMinimumIOSVersion = '12.5.6 <13, 13.6.1 <14, 14.8.1 <15, 15.7.1';
 
 const useWarnIfChanges = <T extends unknown>(value: T, name: string) => {
   const ref = useRef(value);
@@ -91,6 +104,8 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       validateMeta,
       validateData,
+      minimumIOSVersion,
+      unsupportedVersionComponent: UnsupportedVersionComponent,
       ...otherProps
     },
     ref
@@ -185,6 +200,26 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       'mediaPlaybackRequiresUserAction'
     );
     useWarnIfChanges(dataDetectorTypes, 'dataDetectorTypes');
+
+    // Exodus: Check iOS version against minimum requirements
+    const iosVersion = String(Platform.Version);
+    const passesMinimum = minimumIOSVersion
+      ? versionPasses(iosVersion, minimumIOSVersion)
+      : true;
+    const passesHardMinimum = versionPasses(iosVersion, hardMinimumIOSVersion);
+
+    if (!passesMinimum || !passesHardMinimum) {
+      if (UnsupportedVersionComponent) {
+        return <UnsupportedVersionComponent />;
+      }
+      return (
+        <View style={{ alignSelf: 'flex-start' }}>
+          <Text style={{ color: 'red' }}>
+            iOS version is outdated and insecure. Update it to continue.
+          </Text>
+        </View>
+      );
+    }
 
     let otherView = null;
     if (viewState === 'LOADING') {

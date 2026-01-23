@@ -418,3 +418,59 @@ export const useWebViewLogic = ({
     lastErrorEvent,
   };
 };
+
+/**
+ * Exodus: Check if a version string passes the minimum version requirement.
+ * Supports complex version constraints like "12.5.6 <13, 13.6.1 <14, 14.8.1 <15, 15.7.1"
+ * which means:
+ * - 12.5.6 or higher but less than 13
+ * - OR 13.6.1 or higher but less than 14
+ * - OR 14.8.1 or higher but less than 15
+ * - OR 15.7.1 or higher (no upper bound)
+ */
+export const versionPasses = (
+  version: string | undefined,
+  minimum: string | undefined
+): boolean => {
+  if (!version || !minimum) return false;
+  if (typeof version !== 'string' || typeof minimum !== 'string') return false;
+
+  // Handle multiple version ranges separated by ", "
+  if (minimum.includes(', ')) {
+    const variants = minimum.split(', ');
+    // Every entry but the last one should have an upper bound
+    if (!variants.slice(0, -1).every((x) => x.includes(' <'))) return false;
+    // Any match passes
+    return variants.some((x) => versionPasses(version, x));
+  }
+
+  // Handle version range with upper bound (e.g., "12.5.6 <13")
+  if (minimum.includes(' <')) {
+    const [min, max, ...rest] = minimum.split(' <');
+    if (rest.length > 0) return false;
+    // Must be >= min AND < max
+    // Last check validates that max > min (formatting validation)
+    return (
+      versionPasses(version, min) &&
+      !versionPasses(version, max) &&
+      versionPasses(max, version)
+    );
+  }
+
+  // Simple version comparison (e.g., "15.7.1")
+  const versionRegex = /^[0-9]+(\.[0-9]+)*$/;
+  if (!versionRegex.test(version) || !versionRegex.test(minimum)) return false;
+
+  const versionParts = version.split('.').map(Number);
+  const minimumParts = minimum.split('.').map(Number);
+  const len = Math.max(versionParts.length, minimumParts.length);
+
+  for (let i = 0; i < len; i += 1) {
+    const ver = versionParts[i] || 0;
+    const min = minimumParts[i] || 0;
+    if (ver > min) return true;
+    if (ver < min) return false;
+  }
+
+  return true; // equals
+};
