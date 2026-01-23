@@ -1255,8 +1255,10 @@ export interface WebViewSharedProps extends ViewProps {
    *
    * `window.ReactNativeWebView.postMessage` accepts one argument, `data`, which will be
    * available on the event object, `event.nativeEvent.data`. `data` must be a string.
+   *
+   * Exodus: The callback receives validated/transformed data via validateMeta/validateData.
    */
-  onMessage?: (event: WebViewMessageEvent) => void;
+  onMessage?: (event: WebViewMessage) => void;
 
   /**
    * Function that is invoked when the `WebView` is loading.
@@ -1362,4 +1364,16 @@ export interface WebViewSharedProps extends ViewProps {
    * Enables support for the Payment Request API for the WebView
    */
   paymentRequestEnabled?: boolean;
+
+  /**
+   * Exodus: Event metadata validation.
+   * Function to validate/transform event metadata before it reaches the app.
+   */
+  validateMeta: (event: WebViewNativeEvent) => WebViewNativeEvent;
+
+  /**
+   * Exodus: Event data validation.
+   * Function to validate/transform message data before it reaches the app.
+   */
+  validateData: (data: object) => object;
 }

@@ -97,6 +97,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       nativeConfig,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       injectedJavaScriptObject,
+      validateMeta,
+      validateData,
       ...otherProps
     },
     ref
@@ -152,6 +154,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       originWhitelist,
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
+      validateMeta,
+      validateData,
     });
 
     useImperativeHandle(

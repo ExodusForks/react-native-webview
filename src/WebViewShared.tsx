@@ -7,8 +7,10 @@ import {
   WebViewError,
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
+  WebViewMessage,
   WebViewMessageEvent,
   WebViewNavigation,
+  WebViewNativeEvent,
   WebViewNavigationEvent,
   WebViewOpenWindowEvent,
   WebViewProgressEvent,
@@ -113,6 +115,8 @@ export const useWebViewLogic = ({
   originWhitelist,
   onShouldStartLoadWithRequestProp,
   onShouldStartLoadWithRequestCallback,
+  validateMeta,
+  validateData,
 }: {
   startInLoadingState?: boolean;
   onNavigationStateChange?: (event: WebViewNavigation) => void;
@@ -123,7 +127,7 @@ export const useWebViewLogic = ({
   onError?: (event: WebViewErrorEvent) => void;
   onLoadSubResourceError?: (event: WebViewErrorEvent) => void;
   onHttpErrorProp?: (event: WebViewHttpErrorEvent) => void;
-  onMessageProp?: (event: WebViewMessageEvent) => void;
+  onMessageProp?: (event: WebViewMessage) => void;
   onOpenWindowProp?: (event: WebViewOpenWindowEvent) => void;
   onRenderProcessGoneProp?: (event: WebViewRenderProcessGoneEvent) => void;
   onContentProcessDidTerminateProp?: (event: WebViewTerminatedEvent) => void;
@@ -134,6 +138,8 @@ export const useWebViewLogic = ({
     url: string,
     lockIdentifier?: number | undefined
   ) => void;
+  validateMeta: (event: WebViewNativeEvent) => WebViewNativeEvent;
+  validateData: (data: object) => object;
 }) => {
   const [viewState, setViewState] = useState<'IDLE' | 'LOADING' | 'ERROR'>(
     startInLoadingState ? 'LOADING' : 'IDLE'
@@ -142,6 +148,27 @@ export const useWebViewLogic = ({
     null
   );
   const startUrl = useRef<string | null>(null);
+
+  // Exodus: Helper to check if URL passes origin whitelist
+  const passesWhitelistCallback = useCallback(
+    (url: string) => {
+      if (!url || typeof url !== 'string') return false;
+      return passesWhitelist(compileWhitelist(originWhitelist), url);
+    },
+    [originWhitelist]
+  );
+
+  // Exodus: Extract and sanitize metadata from native event
+  const extractMeta = (
+    nativeEvent: WebViewNativeEvent
+  ): WebViewNativeEvent => ({
+    url: String(nativeEvent.url),
+    loading: Boolean(nativeEvent.loading),
+    title: String(nativeEvent.title).slice(0, 512),
+    canGoBack: Boolean(nativeEvent.canGoBack),
+    canGoForward: Boolean(nativeEvent.canGoForward),
+    lockIdentifier: Number(nativeEvent.lockIdentifier),
+  });
 
   const updateNavigationState = useCallback(
     (event: WebViewNavigationEvent) => {
@@ -231,9 +258,21 @@ export const useWebViewLogic = ({
 
   const onMessage = useCallback(
     (event: WebViewMessageEvent) => {
-      onMessageProp?.(event);
+      const { nativeEvent } = event;
+      // Exodus: Validate URL against whitelist before processing message
+      if (!passesWhitelistCallback(nativeEvent.url)) return;
+
+      try {
+        const parsedData = JSON.parse(nativeEvent.data);
+        const data = JSON.stringify(validateData(parsedData));
+        const meta = validateMeta(extractMeta(nativeEvent));
+
+        onMessageProp?.({ ...meta, data });
+      } catch (err) {
+        console.error('Error parsing WebView message', err);
+      }
     },
-    [onMessageProp]
+    [onMessageProp, passesWhitelistCallback, validateData, validateMeta]
   );
 
   const onLoadingProgress = useCallback(

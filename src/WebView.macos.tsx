@@ -60,6 +60,8 @@ const WebViewComponent = forwardRef<{}, MacOSWebViewProps>(
       mediaPlaybackRequiresUserAction,
       incognito,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      validateMeta,
+      validateData,
       ...otherProps
     },
     ref
@@ -103,6 +105,8 @@ const WebViewComponent = forwardRef<{}, MacOSWebViewProps>(
       originWhitelist,
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
+      validateMeta,
+      validateData,
     });
 
     useImperativeHandle(

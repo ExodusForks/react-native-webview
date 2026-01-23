@@ -69,6 +69,8 @@ const WebViewComponent = forwardRef<{}, WindowsWebViewProps>(
       nativeConfig,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       useWebView2,
+      validateMeta,
+      validateData,
       ...otherProps
     },
     ref
@@ -124,6 +126,8 @@ const WebViewComponent = forwardRef<{}, WindowsWebViewProps>(
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
       onOpenWindowProp,
+      validateMeta,
+      validateData,
     });
 
     useImperativeHandle(

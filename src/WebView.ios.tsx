@@ -87,6 +87,8 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       incognito,
       decelerationRate: decelerationRateProp,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      validateMeta,
+      validateData,
       ...otherProps
     },
     ref
@@ -133,6 +135,8 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
       onContentProcessDidTerminateProp,
+      validateMeta,
+      validateData,
     });
 
     useImperativeHandle(
