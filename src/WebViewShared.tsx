@@ -21,6 +21,32 @@ import styles from './WebView.styles';
 
 const defaultOriginWhitelist = ['http://*', 'https://*'] as const;
 
+// Exodus: Default protocol schemes for deep linking
+const defaultDeeplinkWhitelist = ['https:'] as const;
+const defaultDeeplinkBlocklist = ['http:', 'file:', 'javascript:'] as const;
+
+// Exodus: Extract protocol scheme from URL using native URL parsing
+const urlToProtocolScheme = (url: string): string | null => {
+  try {
+    return new URL(url).protocol;
+  } catch {
+    // Protocol schemes must start with a letter and cannot start with digits, underscores etc.
+    // e.g 0invalid, _invalid, +invalid, -invalid, .invalid will all become null
+    return null;
+  }
+};
+
+// Exodus: Check if a value exists in a list of strings
+const matchWithStringList = (
+  prefixes: readonly string[],
+  value: string
+): boolean => {
+  if (typeof value !== 'string') {
+    throw new Error('value was not a string');
+  }
+  return Array.prototype.includes.call(prefixes, value);
+};
+
 const extractOrigin = (url: string): string => {
   const result = /^[A-Za-z][A-Za-z0-9+\-.]+:(\/\/)?[^/]*/.exec(url);
   return result === null ? '' : result[0];
@@ -46,24 +72,59 @@ const createOnShouldStartLoadWithRequest = (
     lockIdentifier: number
   ) => void,
   originWhitelist: readonly string[],
+  deeplinkWhitelist: readonly string[],
   onShouldStartLoadWithRequest?: OnShouldStartLoadWithRequest
 ) => {
+  const compiledWhitelist = compileWhitelist(originWhitelist);
+
   return ({ nativeEvent }: ShouldStartLoadRequestEvent) => {
     let shouldStart = true;
-    const { url, lockIdentifier } = nativeEvent;
+    const { url, lockIdentifier, isTopFrame } = nativeEvent;
 
-    if (!passesWhitelist(compileWhitelist(originWhitelist), url)) {
-      Linking.canOpenURL(url)
-        .then((supported) => {
-          if (supported) {
-            return Linking.openURL(url);
+    // Exodus: Check if the url passes the origin whitelist
+    if (!passesWhitelist(compiledWhitelist, url)) {
+      const protocol = urlToProtocolScheme(url);
+
+      // Check that the protocol was properly parsed
+      if (protocol !== null) {
+        // Exodus: Check if the protocol passes the hardcoded deeplink blocklist
+        const foundMatchInBlocklist = matchWithStringList(
+          defaultDeeplinkBlocklist,
+          protocol
+        );
+        if (!foundMatchInBlocklist) {
+          // Exodus: Check if the protocol passes the dynamic deeplink allowlist
+          const foundMatchInAllowlist = matchWithStringList(
+            deeplinkWhitelist,
+            protocol
+          );
+
+          if (foundMatchInAllowlist) {
+            Linking.canOpenURL(url)
+              .then((supported) => {
+                // Allow mailto: even if canOpenURL returns false (RN Linking quirk)
+                if (
+                  (supported && isTopFrame) ||
+                  protocol.startsWith('mailto:')
+                ) {
+                  return Linking.openURL(url);
+                }
+                console.warn(`Can't open url: ${url}`);
+                return undefined;
+              })
+              .catch((e) => {
+                console.warn('Error opening URL: ', e);
+              });
+          } else {
+            console.warn(`Failed to pass whitelist for deep link url: ${url}`);
           }
-          console.warn(`Can't open url: ${url}`);
-          return undefined;
-        })
-        .catch((e) => {
-          console.warn('Error opening URL: ', e);
-        });
+        } else {
+          console.warn(
+            `Failed to pass default block list for deep link url: ${url}`
+          );
+        }
+      }
+
       shouldStart = false;
     } else if (onShouldStartLoadWithRequest) {
       shouldStart = onShouldStartLoadWithRequest(nativeEvent);
@@ -93,6 +154,7 @@ const defaultRenderError = (
 
 export {
   defaultOriginWhitelist,
+  defaultDeeplinkWhitelist,
   createOnShouldStartLoadWithRequest,
   defaultRenderLoading,
   defaultRenderError,
@@ -113,6 +175,7 @@ export const useWebViewLogic = ({
   onRenderProcessGoneProp,
   onContentProcessDidTerminateProp,
   originWhitelist,
+  deeplinkWhitelist,
   onShouldStartLoadWithRequestProp,
   onShouldStartLoadWithRequestCallback,
   validateMeta,
@@ -132,6 +195,7 @@ export const useWebViewLogic = ({
   onRenderProcessGoneProp?: (event: WebViewRenderProcessGoneEvent) => void;
   onContentProcessDidTerminateProp?: (event: WebViewTerminatedEvent) => void;
   originWhitelist: readonly string[];
+  deeplinkWhitelist: readonly string[];
   onShouldStartLoadWithRequestProp?: OnShouldStartLoadWithRequest;
   onShouldStartLoadWithRequestCallback: (
     shouldStart: boolean,
@@ -297,10 +361,12 @@ export const useWebViewLogic = ({
       createOnShouldStartLoadWithRequest(
         onShouldStartLoadWithRequestCallback,
         originWhitelist,
+        deeplinkWhitelist,
         onShouldStartLoadWithRequestProp
       ),
     [
       originWhitelist,
+      deeplinkWhitelist,
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
     ]

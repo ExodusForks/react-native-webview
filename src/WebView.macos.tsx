@@ -10,6 +10,7 @@ import RNCWebView, { Commands, NativeProps } from './RNCWebViewNativeComponent';
 import RNCWebViewModule from './NativeRNCWebViewModule';
 import {
   defaultOriginWhitelist,
+  defaultDeeplinkWhitelist,
   defaultRenderError,
   defaultRenderLoading,
   useWebViewLogic,
@@ -36,6 +37,7 @@ const WebViewComponent = forwardRef<{}, MacOSWebViewProps>(
       javaScriptEnabled = true,
       cacheEnabled = true,
       originWhitelist = defaultOriginWhitelist,
+      deeplinkWhitelist = defaultDeeplinkWhitelist,
       useSharedProcessPool = true,
       injectedJavaScript,
       injectedJavaScriptBeforeContentLoaded,
@@ -103,6 +105,7 @@ const WebViewComponent = forwardRef<{}, MacOSWebViewProps>(
       onMessageProp,
       startInLoadingState,
       originWhitelist,
+      deeplinkWhitelist,
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
       validateMeta,

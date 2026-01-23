@@ -1323,6 +1323,14 @@ export interface WebViewSharedProps extends ViewProps {
   readonly originWhitelist?: string[];
 
   /**
+   * Exodus: List of protocol schemes to allow being deep linked to.
+   * This requires an exact match. The default behavior is to only allow "https:".
+   * URLs that don't pass the originWhitelist will be checked against this list
+   * to determine if they should be opened externally via Linking.openURL.
+   */
+  readonly deeplinkWhitelist?: string[];
+
+  /**
    * Function that allows custom handling of any web view requests. Return
    * `true` from the function to continue loading the request and `false`
    * to stop loading. The `navigationType` is always `other` on android.

@@ -23,6 +23,7 @@ import { RCTWebView, RCTWebView2 } from './WebViewNativeComponent.windows';
 import {
   useWebViewLogic,
   defaultOriginWhitelist,
+  defaultDeeplinkWhitelist,
   defaultRenderError,
   defaultRenderLoading,
 } from './WebViewShared';
@@ -50,6 +51,7 @@ const WebViewComponent = forwardRef<{}, WindowsWebViewProps>(
     {
       cacheEnabled = true,
       originWhitelist = defaultOriginWhitelist,
+      deeplinkWhitelist = defaultDeeplinkWhitelist,
       startInLoadingState,
       onNavigationStateChange,
       onLoadStart,
@@ -123,6 +125,7 @@ const WebViewComponent = forwardRef<{}, WindowsWebViewProps>(
       onMessageProp,
       startInLoadingState,
       originWhitelist,
+      deeplinkWhitelist,
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
       onOpenWindowProp,

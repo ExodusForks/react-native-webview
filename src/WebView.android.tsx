@@ -18,6 +18,7 @@ import RNCWebView, { Commands, NativeProps } from './RNCWebViewNativeComponent';
 import RNCWebViewModule from './NativeRNCWebViewModule';
 import {
   defaultOriginWhitelist,
+  defaultDeeplinkWhitelist,
   defaultRenderError,
   defaultRenderLoading,
   useWebViewLogic,
@@ -73,6 +74,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       cacheEnabled = true,
       androidLayerType = 'none',
       originWhitelist = defaultOriginWhitelist,
+      deeplinkWhitelist = defaultDeeplinkWhitelist,
       setSupportMultipleWindows = true,
       setBuiltInZoomControls = true,
       setDisplayZoomControls = false,
@@ -152,6 +154,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       onOpenWindowProp,
       startInLoadingState,
       originWhitelist,
+      deeplinkWhitelist,
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
       validateMeta,
