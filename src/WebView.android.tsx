@@ -5,9 +5,17 @@ import React, {
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from 'react';
 
-import { Image, View, ImageSourcePropType, HostComponent } from 'react-native';
+import {
+  Image,
+  View,
+  Text,
+  NativeModules,
+  ImageSourcePropType,
+  HostComponent,
+} from 'react-native';
 
 import BatchedBridge from 'react-native/Libraries/BatchedBridge/BatchedBridge';
 import EventEmitter from 'react-native/Libraries/vendor/emitter/EventEmitter';
@@ -22,6 +30,7 @@ import {
   defaultRenderError,
   defaultRenderLoading,
   useWebViewLogic,
+  versionPasses,
 } from './WebViewShared';
 import {
   AndroidWebViewProps,
@@ -55,6 +64,19 @@ registerCallableModule('RNCWebViewMessagingModule', {
     directEventEmitter.emit('onMessage', event);
   },
 });
+
+const { getWebViewDefaultUserAgent } = NativeModules.RNCWebViewUtils || {};
+
+let userAgentPromise: Promise<string> | undefined;
+
+async function getUserAgent(): Promise<string> {
+  if (!getWebViewDefaultUserAgent) return 'unknown';
+  if (!userAgentPromise) userAgentPromise = getWebViewDefaultUserAgent();
+  const userAgent = await userAgentPromise;
+  return userAgent || 'unknown';
+}
+
+const hardMinimumChromeVersion = '100.0';
 
 /**
  * A simple counter to uniquely identify WebView instances. Do not use this for anything else.
@@ -101,6 +123,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       injectedJavaScriptObject,
       validateMeta,
       validateData,
+      minimumChromeVersion,
+      unsupportedVersionComponent: UnsupportedVersionComponent,
       ...otherProps
     },
     ref
@@ -111,6 +135,12 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
     const webViewRef = useRef<React.ComponentRef<
       HostComponent<NativeProps>
     > | null>(null);
+
+    const [userAgent, setUserAgent] = useState<string>();
+
+    useEffect(() => {
+      getUserAgent().then(setUserAgent);
+    }, []);
 
     const onShouldStartLoadWithRequestCallback = useCallback(
       (shouldStart: boolean, url: string, lockIdentifier?: number) => {
@@ -226,6 +256,31 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         onMessageSubscription.remove();
       };
     }, [messagingModuleName, onMessage, onShouldStartLoadWithRequest]);
+
+    // Stop the rendering until userAgent is known
+    if (!userAgent) return null;
+
+    const chromeVersion = userAgent.match(
+      /chrome\/((?:[0-9]+\.)+[0-9]+)/i
+    )?.[1];
+
+    if (
+      !(
+        versionPasses(chromeVersion, minimumChromeVersion) &&
+        versionPasses(chromeVersion, hardMinimumChromeVersion)
+      )
+    ) {
+      if (UnsupportedVersionComponent) {
+        return <UnsupportedVersionComponent />;
+      }
+      return (
+        <View style={{ alignSelf: 'flex-start' }}>
+          <Text style={{ color: 'red' }}>
+            Chrome version is outdated and insecure. Update it to continue.
+          </Text>
+        </View>
+      );
+    }
 
     let otherView: ReactElement | undefined;
     if (viewState === 'LOADING') {

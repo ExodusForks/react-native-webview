@@ -1188,6 +1188,20 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   onLoadSubResourceError?: (event: WebViewErrorEvent) => void;
+
+  /**
+   * Exodus: Minimum Chrome version required to use the WebView on Android.
+   * If the device Chrome version is below this, the WebView will not render.
+   * @platform android
+   */
+  minimumChromeVersion?: string;
+
+  /**
+   * Exodus: Component to render if the Chrome version is not supported.
+   * If not provided, a default error message will be shown.
+   * @platform android
+   */
+  unsupportedVersionComponent?: ElementType;
 }
 
 export interface WebViewSharedProps extends ViewProps {
