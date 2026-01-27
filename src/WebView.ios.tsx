@@ -51,6 +51,17 @@ const processDecelerationRate = (
 // Last entry has no upper bound
 const hardMinimumIOSVersion = '12.5.6 <13, 13.6.1 <14, 14.8.1 <15, 15.7.1';
 
+/**
+ * Exodus: Hardcoded security defaults that cannot be overridden by props.
+ * These values are always enforced regardless of what the consumer passes.
+ */
+const securityMediaPlaybackRequiresUserAction = true;
+const securityAllowsInlineMediaPlayback = true;
+const securityUseSharedProcessPool = false;
+const securitySharedCookiesEnabled = false;
+const securityEnableApplePay = false;
+const securityDataDetectorTypes = ['none'] as const;
+
 const useWarnIfChanges = <T extends unknown>(value: T, name: string) => {
   const ref = useRef(value);
   if (ref.current !== value) {
@@ -69,7 +80,6 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       cacheEnabled = true,
       originWhitelist = defaultOriginWhitelist,
       deeplinkWhitelist = defaultDeeplinkWhitelist,
-      useSharedProcessPool = true,
       textInteractionEnabled = true,
       injectedJavaScript,
       injectedJavaScriptBeforeContentLoaded,
@@ -94,11 +104,8 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       containerStyle,
       source,
       nativeConfig,
-      allowsInlineMediaPlayback,
       allowsPictureInPictureMediaPlayback = true,
       allowsAirPlayForMediaPlayback,
-      mediaPlaybackRequiresUserAction,
-      dataDetectorTypes,
       incognito,
       decelerationRate: decelerationRateProp,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
@@ -185,7 +192,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       [setViewState, webViewRef]
     );
 
-    useWarnIfChanges(allowsInlineMediaPlayback, 'allowsInlineMediaPlayback');
+    useWarnIfChanges(
+      securityAllowsInlineMediaPlayback,
+      'allowsInlineMediaPlayback'
+    );
     useWarnIfChanges(
       allowsPictureInPictureMediaPlayback,
       'allowsPictureInPictureMediaPlayback'
@@ -196,10 +206,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
     );
     useWarnIfChanges(incognito, 'incognito');
     useWarnIfChanges(
-      mediaPlaybackRequiresUserAction,
+      securityMediaPlaybackRequiresUserAction,
       'mediaPlaybackRequiresUserAction'
     );
-    useWarnIfChanges(dataDetectorTypes, 'dataDetectorTypes');
+    useWarnIfChanges(securityDataDetectorTypes, 'dataDetectorTypes');
 
     // Exodus: Check iOS version against minimum requirements
     const iosVersion = String(Platform.Version);
@@ -277,7 +287,9 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         fraudulentWebsiteWarningEnabled={fraudulentWebsiteWarningEnabled}
         javaScriptEnabled={javaScriptEnabled}
         cacheEnabled={cacheEnabled}
-        useSharedProcessPool={useSharedProcessPool}
+        useSharedProcessPool={securityUseSharedProcessPool}
+        sharedCookiesEnabled={securitySharedCookiesEnabled}
+        enableApplePay={securityEnableApplePay}
         textInteractionEnabled={textInteractionEnabled}
         decelerationRate={decelerationRate}
         messagingEnabled={typeof onMessageProp === 'function'}
@@ -302,23 +314,21 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
           injectedJavaScriptBeforeContentLoadedForMainFrameOnly
         }
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
-        dataDetectorTypes={
-          !dataDetectorTypes || Array.isArray(dataDetectorTypes)
-            ? dataDetectorTypes
-            : [dataDetectorTypes]
-        }
+        dataDetectorTypes={securityDataDetectorTypes}
         allowsAirPlayForMediaPlayback={allowsAirPlayForMediaPlayback}
-        allowsInlineMediaPlayback={allowsInlineMediaPlayback}
+        allowsInlineMediaPlayback={securityAllowsInlineMediaPlayback}
         allowsPictureInPictureMediaPlayback={
           allowsPictureInPictureMediaPlayback
         }
         incognito={incognito}
-        mediaPlaybackRequiresUserAction={mediaPlaybackRequiresUserAction}
+        mediaPlaybackRequiresUserAction={
+          securityMediaPlaybackRequiresUserAction
+        }
         newSource={newSource}
         style={webViewStyles}
         hasOnFileDownload={!!onFileDownload}
         ref={webViewRef}
-        // @ts-expect-error old arch only
+        // @ts-expect-error source prop for old arch compatibility
         source={sourceResolved}
         {...nativeConfig?.props}
       />

@@ -19,7 +19,8 @@ import {
 } from './WebViewTypes';
 import styles from './WebView.styles';
 
-const defaultOriginWhitelist = ['http://*', 'https://*'] as const;
+// Exodus: Only allow HTTPS by default for security
+const defaultOriginWhitelist = ['https://*'] as const;
 
 // Exodus: Default protocol schemes for deep linking
 const defaultDeeplinkWhitelist = ['https:'] as const;

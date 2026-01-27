@@ -106,7 +106,6 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       androidLayerType = 'none',
       originWhitelist = defaultOriginWhitelist,
       deeplinkWhitelist = defaultDeeplinkWhitelist,
-      // Exodus: setSupportMultipleWindows is hardcoded for security, not from props
       setBuiltInZoomControls = true,
       setDisplayZoomControls = false,
       nestedScrollEnabled = false,
