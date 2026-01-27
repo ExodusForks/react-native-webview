@@ -156,6 +156,9 @@ RCTAutoInsetsProtocol>
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* __IPHONE_13_0 */
   BOOL _savedAutomaticallyAdjustsScrollIndicatorInsets;
 #endif
+
+  // Exodus: Track pending navigation decision lock identifiers for cleanup on dealloc
+  NSMutableSet<NSNumber *> *_pendingLockIdentifiers;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -166,6 +169,7 @@ RCTAutoInsetsProtocol>
 #else
     super.backgroundColor = [RCTUIColor clearColor];
 #endif // !TARGET_OS_OSX
+    _pendingLockIdentifiers = [[NSMutableSet alloc] init];
     _bounces = YES;
     _scrollEnabled = YES;
     _showsHorizontalScrollIndicator = YES;
@@ -317,6 +321,10 @@ RCTAutoInsetsProtocol>
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   if (@available(iOS 11.0, *)) {
     [self.webView.configuration.websiteDataStore.httpCookieStore removeObserver:self];
+  }
+
+  for (NSNumber *lockId in _pendingLockIdentifiers) {
+    [[RNCWebViewDecisionManager getInstance] cancelDecisionForLockIdentifier:[lockId integerValue]];
   }
 }
 
@@ -1388,6 +1396,8 @@ RCTAutoInsetsProtocol>
     if (_onShouldStartLoadWithRequest) {
         NSInteger lockIdentifier = [[RNCWebViewDecisionManager getInstance] setDecisionHandler: ^(BOOL shouldStart){
             dispatch_async(dispatch_get_main_queue(), ^{
+                [self->_pendingLockIdentifiers removeObject:@(lockIdentifier)];
+
                 if (!shouldStart) {
                     decisionHandler(WKNavigationActionPolicyCancel);
                     return;
@@ -1409,6 +1419,9 @@ RCTAutoInsetsProtocol>
             });
 
         }];
+
+        [_pendingLockIdentifiers addObject:@(lockIdentifier)];
+
         NSMutableDictionary<NSString *, id> *event = [self baseEvent];
         if (request.mainDocumentURL) {
           [event addEntriesFromDictionary: @{

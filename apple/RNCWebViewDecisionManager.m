@@ -8,6 +8,7 @@
  * - Adds collision checking to skip identifiers still in use
  * - All public methods use @synchronized for thread safety
  * - Explicitly copies blocks to heap to prevent use-after-free
+ * - Provides cancelDecisionForLockIdentifier: for cleanup on WebView dealloc
  */
 @implementation RNCWebViewDecisionManager
 
@@ -44,6 +45,13 @@
             return;
         }
         handler(shouldStart);
+        [self.decisionHandlers removeObjectForKey:@(lockIdentifier)];
+    }
+}
+
+
+- (void)cancelDecisionForLockIdentifier:(NSInteger)lockIdentifier {
+    @synchronized (self) {
         [self.decisionHandlers removeObjectForKey:@(lockIdentifier)];
     }
 }

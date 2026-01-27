@@ -16,4 +16,5 @@ typedef void (^DecisionBlock)(BOOL);
 
 - (NSInteger)setDecisionHandler:(DecisionBlock)handler;
 - (void)setResult:(BOOL)shouldStart forLockIdentifier:(NSInteger)lockIdentifier;
+- (void)cancelDecisionForLockIdentifier:(NSInteger)lockIdentifier;
 @end
