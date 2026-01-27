@@ -7,6 +7,7 @@
  * - Uses NSInteger (64-bit) instead of int to prevent overflow
  * - Adds collision checking to skip identifiers still in use
  * - All public methods use @synchronized for thread safety
+ * - Explicitly copies blocks to heap to prevent use-after-free
  */
 @implementation RNCWebViewDecisionManager
 
@@ -26,13 +27,11 @@
     @synchronized (self) {
         NSInteger lockIdentifier = self.nextLockIdentifier++;
 
-        // Exodus: Skip identifiers that are still in use (handles wraparound case)
-        // This provides defense-in-depth even though NSInteger overflow is unlikely
         while ([self.decisionHandlers objectForKey:@(lockIdentifier)] != nil) {
             lockIdentifier = self.nextLockIdentifier++;
         }
 
-        [self.decisionHandlers setObject:decisionHandler forKey:@(lockIdentifier)];
+        [self.decisionHandlers setObject:[decisionHandler copy] forKey:@(lockIdentifier)];
         return lockIdentifier;
     }
 }
