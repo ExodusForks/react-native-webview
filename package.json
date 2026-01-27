@@ -10,7 +10,7 @@
     "Thibault Malbranche <malbranche.thibault@gmail.com>"
   ],
   "license": "MIT",
-  "version": "13.16.0-exodus.2",
+  "version": "13.16.0-exodus.3",
   "homepage": "https://github.com/ExodusMovement/react-native-webview#readme",
   "scripts": {
     "android": "react-native run-android",
