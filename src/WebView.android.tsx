@@ -76,7 +76,16 @@ async function getUserAgent(): Promise<string> {
   return userAgent || 'unknown';
 }
 
+// Exodus: Minimum Chrome version enforced by the library for security
 const hardMinimumChromeVersion = '100.0';
+
+/**
+ * Exodus: Hardcoded security defaults that cannot be overridden by props.
+ * These values are always enforced regardless of what the consumer passes.
+ */
+const mediaPlaybackRequiresUserAction = true;
+const securitySupportMultipleWindows = true;
+const securityMixedContentMode = 'never' as const;
 
 /**
  * A simple counter to uniquely identify WebView instances. Do not use this for anything else.
@@ -97,7 +106,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       androidLayerType = 'none',
       originWhitelist = defaultOriginWhitelist,
       deeplinkWhitelist = defaultDeeplinkWhitelist,
-      setSupportMultipleWindows = true,
+      // Exodus: setSupportMultipleWindows is hardcoded for security, not from props
       setBuiltInZoomControls = true,
       setDisplayZoomControls = false,
       nestedScrollEnabled = false,
@@ -374,10 +383,12 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         saveFormDataDisabled={saveFormDataDisabled}
         cacheEnabled={cacheEnabled}
         androidLayerType={androidLayerType}
-        setSupportMultipleWindows={setSupportMultipleWindows}
+        setSupportMultipleWindows={securitySupportMultipleWindows}
         setBuiltInZoomControls={setBuiltInZoomControls}
         setDisplayZoomControls={setDisplayZoomControls}
         nestedScrollEnabled={nestedScrollEnabled}
+        mixedContentMode={securityMixedContentMode}
+        mediaPlaybackRequiresUserAction={mediaPlaybackRequiresUserAction}
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
         {...nativeConfig?.props}
       />
