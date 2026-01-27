@@ -1386,7 +1386,7 @@ RCTAutoInsetsProtocol>
     }
 
     if (_onShouldStartLoadWithRequest) {
-        int lockIdentifier = [[RNCWebViewDecisionManager getInstance] setDecisionHandler: ^(BOOL shouldStart){
+        NSInteger lockIdentifier = [[RNCWebViewDecisionManager getInstance] setDecisionHandler: ^(BOOL shouldStart){
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (!shouldStart) {
                     decisionHandler(WKNavigationActionPolicyCancel);

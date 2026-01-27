@@ -18,7 +18,7 @@ RCT_EXPORT_METHOD(isFileUploadSupported:(RCTPromiseResolveBlock)resolve reject:(
 
 RCT_EXPORT_METHOD(shouldStartLoadWithLockIdentifier:(BOOL)shouldStart lockIdentifier:(double)lockIdentifier)
 {
-    [[RNCWebViewDecisionManager getInstance] setResult:shouldStart forLockIdentifier:(int)lockIdentifier];
+    [[RNCWebViewDecisionManager getInstance] setResult:shouldStart forLockIdentifier:(NSInteger)lockIdentifier];
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED
