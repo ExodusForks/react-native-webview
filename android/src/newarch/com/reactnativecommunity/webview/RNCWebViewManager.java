@@ -16,7 +16,6 @@ import com.facebook.react.viewmanagers.RNCWebViewManagerInterface;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.SubResourceErrorEvent;
-import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
@@ -64,25 +63,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     }
 
     @Override
-    @ReactProp(name = "allowFileAccess")
-    public void setAllowFileAccess(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setAllowFileAccess(view, value);
-    }
-
-    @Override
-    @ReactProp(name = "allowFileAccessFromFileURLs")
-    public void setAllowFileAccessFromFileURLs(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setAllowFileAccessFromFileURLs(view, value);
-
-    }
-
-    @Override
-    @ReactProp(name = "allowUniversalAccessFromFileURLs")
-    public void setAllowUniversalAccessFromFileURLs(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setAllowUniversalAccessFromFileURLs(view, value);
-    }
-
-    @Override
     @ReactProp(name = "allowsFullscreenVideo")
     public void setAllowsFullscreenVideo(RNCWebViewWrapper view, boolean value) {
         mRNCWebViewManagerImpl.setAllowsFullscreenVideo(view, value);
@@ -98,12 +78,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     @ReactProp(name = "androidLayerType")
     public void setAndroidLayerType(RNCWebViewWrapper view, @Nullable String value) {
         mRNCWebViewManagerImpl.setAndroidLayerType(view, value);
-    }
-
-    @Override
-    @ReactProp(name = "applicationNameForUserAgent")
-    public void setApplicationNameForUserAgent(RNCWebViewWrapper view, @Nullable String value) {
-        mRNCWebViewManagerImpl.setApplicationNameForUserAgent(view, value);
     }
 
     @Override
@@ -172,29 +146,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         mRNCWebViewManagerImpl.setInjectedJavaScriptBeforeContentLoaded(view, value);
     }
 
-    @Override
-    @ReactProp(name = "injectedJavaScriptForMainFrameOnly")
-    public void setInjectedJavaScriptForMainFrameOnly(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setInjectedJavaScriptForMainFrameOnly(view, value);
-
-    }
-
-    @Override
-    @ReactProp(name = "injectedJavaScriptBeforeContentLoadedForMainFrameOnly")
-    public void setInjectedJavaScriptBeforeContentLoadedForMainFrameOnly(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setInjectedJavaScriptBeforeContentLoadedForMainFrameOnly(view, value);
-
-    }
-
     @ReactProp(name = "injectedJavaScriptObject")
     public void setInjectedJavaScriptObject(RNCWebViewWrapper view, @Nullable String value) {
         mRNCWebViewManagerImpl.setInjectedJavaScriptObject(view, value);
-    }
-
-    @Override
-    @ReactProp(name = "javaScriptCanOpenWindowsAutomatically")
-    public void setJavaScriptCanOpenWindowsAutomatically(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setJavaScriptCanOpenWindowsAutomatically(view, value);
     }
 
     @ReactProp(name = "javaScriptEnabled")
@@ -358,9 +312,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     public void setAllowsPictureInPictureMediaPlayback(RNCWebViewWrapper view, boolean value) {}
 
     @Override
-    public void setAllowsAirPlayForMediaPlayback(RNCWebViewWrapper view, boolean value) {}
-
-    @Override
     public void setAllowsLinkPreview(RNCWebViewWrapper view, boolean value) {}
 
     @Override
@@ -427,9 +378,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     public void setTextInteractionEnabled(RNCWebViewWrapper view, boolean value) {}
 
     @Override
-    public void setHasOnFileDownload(RNCWebViewWrapper view, boolean value) {}
-
-    @Override
     public void setMediaCapturePermissionGrantType(RNCWebViewWrapper view, @Nullable String value) {}
 
     @Override
@@ -460,11 +408,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
   @Override
   public void stopLoading(RNCWebViewWrapper view) {
     view.getWebView().stopLoading();
-  }
-
-  @Override
-  public void injectJavaScript(RNCWebViewWrapper view, String javascript) {
-      view.getWebView().evaluateJavascriptWithFallback(javascript);
   }
 
   @Override
@@ -538,7 +481,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopLoadingProgressEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingProgress"));
         export.put(TopShouldStartLoadWithRequestEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldStartLoadWithRequest"));
         export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
-        export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
         export.put(TopRenderProcessGoneEvent.EVENT_NAME, MapBuilder.of("registrationName", "onRenderProcessGone"));
         export.put(TopCustomMenuSelectionEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCustomMenuSelection"));
         export.put(TopOpenWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onOpenWindow"));

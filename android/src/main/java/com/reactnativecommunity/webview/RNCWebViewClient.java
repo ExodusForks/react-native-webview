@@ -10,12 +10,10 @@ import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.util.Pair;
 
 import com.facebook.common.logging.FLog;
@@ -26,7 +24,6 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
 import com.reactnativecommunity.webview.events.SubResourceErrorEvent;
-import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
@@ -254,24 +251,6 @@ public class RNCWebViewClient extends WebViewClient {
 
         int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
         UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopLoadingErrorEvent(reactTag, eventData));
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    @Override
-    public void onReceivedHttpError(
-            WebView webView,
-            WebResourceRequest request,
-            WebResourceResponse errorResponse) {
-        super.onReceivedHttpError(webView, request, errorResponse);
-
-        if (request.isForMainFrame()) {
-            WritableMap eventData = createWebViewEvent(webView, request.getUrl().toString());
-            eventData.putInt("statusCode", errorResponse.getStatusCode());
-            eventData.putString("description", errorResponse.getReasonPhrase());
-
-            int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
-            UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopHttpErrorEvent(reactTag, eventData));
-        }
     }
 
     @TargetApi(Build.VERSION_CODES.O)

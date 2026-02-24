@@ -33,6 +33,23 @@
         }
 
         [self.decisionHandlers setObject:[decisionHandler copy] forKey:@(lockIdentifier)];
+
+        // Exodus: Deny-by-default timeout
+        // If JS doesn't respond within 500ms, deny the navigation for security.
+        // setResult:forLockIdentifier: removes the handler, so this is a no-op
+        // if JS responded in time.
+        NSInteger capturedIdentifier = lockIdentifier;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(500 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+            @synchronized (self) {
+                DecisionBlock pendingHandler = [self.decisionHandlers objectForKey:@(capturedIdentifier)];
+                if (pendingHandler != nil) {
+                    RCTLogWarn(@"Navigation decision timeout for lock %ld, denying by default", (long)capturedIdentifier);
+                    pendingHandler(NO);
+                    [self.decisionHandlers removeObjectForKey:@(capturedIdentifier)];
+                }
+            }
+        });
+
         return lockIdentifier;
     }
 }

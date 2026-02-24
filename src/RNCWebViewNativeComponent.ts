@@ -33,17 +33,6 @@ export type WebViewMessageEvent = Readonly<{
 export type WebViewOpenWindowEvent = Readonly<{
   targetUrl: string;
 }>;
-export type WebViewHttpErrorEvent = Readonly<{
-  url: string;
-  loading: boolean;
-  title: string;
-  canGoBack: boolean;
-  canGoForward: boolean;
-  lockIdentifier: Double;
-  description: string;
-  statusCode: Int32;
-}>;
-
 export type WebViewErrorEvent = Readonly<{
   url: string;
   loading: boolean;
@@ -136,15 +125,10 @@ type WebViewRenderProcessGoneEvent = Readonly<{
   didCrash: boolean;
 }>;
 
-type WebViewDownloadEvent = Readonly<{
-  downloadUrl: string;
-}>;
-
 // type MenuItem = Readonly<{label: string, key: string}>;
 
 export interface NativeProps extends ViewProps {
   // Android only
-  allowFileAccess?: boolean;
   allowsProtectedMedia?: boolean;
   allowsFullscreenVideo?: boolean;
   androidLayerType?: WithDefault<'none' | 'software' | 'hardware', 'none'>;
@@ -179,11 +163,9 @@ export interface NativeProps extends ViewProps {
   // !Android only
 
   // iOS only
-  allowingReadAccessToURL?: string;
   allowsBackForwardNavigationGestures?: boolean;
   allowsInlineMediaPlayback?: boolean;
   allowsPictureInPictureMediaPlayback?: boolean;
-  allowsAirPlayForMediaPlayback?: boolean;
   allowsLinkPreview?: WithDefault<boolean, true>;
   automaticallyAdjustContentInsets?: WithDefault<boolean, true>;
   autoManageStatusBarEnabled?: WithDefault<boolean, true>;
@@ -239,18 +221,11 @@ export interface NativeProps extends ViewProps {
   useSharedProcessPool?: WithDefault<boolean, true>;
   onContentProcessDidTerminate?: DirectEventHandler<WebViewNativeEvent>;
   onCustomMenuSelection?: DirectEventHandler<WebViewCustomMenuSelectionEvent>;
-  onFileDownload?: DirectEventHandler<WebViewDownloadEvent>;
-
   menuItems?: ReadonlyArray<Readonly<{ label: string; key: string }>>;
   suppressMenuItems?: Readonly<string>[];
-  // Workaround to watch if listener if defined
-  hasOnFileDownload?: boolean;
   fraudulentWebsiteWarningEnabled?: WithDefault<boolean, true>;
   // !iOS only
 
-  allowFileAccessFromFileURLs?: boolean;
-  allowUniversalAccessFromFileURLs?: boolean;
-  applicationNameForUserAgent?: string;
   basicAuthCredential?: Readonly<{
     username: string;
     password: string;
@@ -259,12 +234,6 @@ export interface NativeProps extends ViewProps {
   incognito?: boolean;
   injectedJavaScript?: string;
   injectedJavaScriptBeforeContentLoaded?: string;
-  injectedJavaScriptForMainFrameOnly?: WithDefault<boolean, true>;
-  injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: WithDefault<
-    boolean,
-    true
-  >;
-  javaScriptCanOpenWindowsAutomatically?: boolean;
   javaScriptEnabled?: WithDefault<boolean, true>;
   webviewDebuggingEnabled?: boolean;
   mediaPlaybackRequiresUserAction?: WithDefault<boolean, true>;
@@ -274,7 +243,6 @@ export interface NativeProps extends ViewProps {
   onLoadingFinish: DirectEventHandler<WebViewNavigationEvent>;
   onLoadingProgress: DirectEventHandler<WebViewNativeProgressEvent>;
   onLoadingStart: DirectEventHandler<WebViewNavigationEvent>;
-  onHttpError: DirectEventHandler<WebViewHttpErrorEvent>;
   onMessage: DirectEventHandler<WebViewMessageEvent>;
   onOpenWindow?: DirectEventHandler<WebViewOpenWindowEvent>;
   hasOnOpenWindowEvent?: boolean;
@@ -302,10 +270,6 @@ export interface NativeCommands {
   goForward: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
   reload: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
   stopLoading: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
-  injectJavaScript: (
-    viewRef: React.ElementRef<HostComponent<NativeProps>>,
-    javascript: string
-  ) => void;
   requestFocus: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
   postMessage: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
@@ -333,7 +297,6 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'goForward',
     'reload',
     'stopLoading',
-    'injectJavaScript',
     'requestFocus',
     'postMessage',
     'loadUrl',

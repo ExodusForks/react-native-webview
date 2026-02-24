@@ -185,9 +185,7 @@ RCTAutoInsetsProtocol>
     _contentInset = UIEdgeInsetsZero;
     _savedKeyboardDisplayRequiresUserAction = YES;
     _injectedJavaScript = nil;
-    _injectedJavaScriptForMainFrameOnly = YES;
     _injectedJavaScriptBeforeContentLoaded = nil;
-    _injectedJavaScriptBeforeContentLoadedForMainFrameOnly = YES;
     _enableApplePay = NO;
 #if TARGET_OS_IOS
     _savedStatusBarStyle = RCTSharedApplication().statusBarStyle;
@@ -443,23 +441,13 @@ RCTAutoInsetsProtocol>
   }
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */
   if (@available(iOS 13.0, *)) {
-    if (!_fraudulentWebsiteWarningEnabled) {
-        prefs.fraudulentWebsiteWarningEnabled = NO;
-        _prefsUsed = YES;
-    }
+    // Exodus: Always force fraudulent website warning enabled for security
+    prefs.fraudulentWebsiteWarningEnabled = YES;
+    _prefsUsed = YES;
   }
 #endif
-  if (_allowUniversalAccessFromFileURLs) {
-    [wkWebViewConfig setValue:@TRUE forKey:@"allowUniversalAccessFromFileURLs"];
-  }
-  if (_allowFileAccessFromFileURLs) {
-    [prefs setValue:@TRUE forKey:@"allowFileAccessFromFileURLs"];
-    _prefsUsed = YES;
-  }
-  if (_javaScriptCanOpenWindowsAutomatically) {
-    [prefs setValue:@TRUE forKey:@"javaScriptCanOpenWindowsAutomatically"];
-    _prefsUsed = YES;
-  }
+  // Exodus: Force javaScriptCanOpenWindowsAutomatically = NO for security
+  // WKPreferences default is NO, so we don't need to set anything
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 140500 /* iOS 14.5 */
   if (@available(iOS 14.5, *)) {
     if (!_textInteractionEnabled) {
@@ -505,7 +493,8 @@ RCTAutoInsetsProtocol>
   [self resetupScripts:wkWebViewConfig];
 
   if(@available(macos 10.11, ios 9.0, *)) {
-    wkWebViewConfig.allowsAirPlayForMediaPlayback = _allowsAirPlayForMediaPlayback;
+    // Exodus: Force AirPlay disabled for security
+    wkWebViewConfig.allowsAirPlayForMediaPlayback = NO;
   }
 
 #if !TARGET_OS_OSX
@@ -516,10 +505,6 @@ RCTAutoInsetsProtocol>
   : WKAudiovisualMediaTypeNone;
   wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
 #endif // !TARGET_OS_OSX
-
-  if (_applicationNameForUserAgent) {
-    wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, _applicationNameForUserAgent];
-  }
 
   return wkWebViewConfig;
 }
@@ -815,17 +800,6 @@ RCTAutoInsetsProtocol>
   }
 }
 
-- (void)setAllowingReadAccessToURL:(NSString *)allowingReadAccessToURL
-{
-  if (![_allowingReadAccessToURL isEqualToString:allowingReadAccessToURL]) {
-    _allowingReadAccessToURL = [allowingReadAccessToURL copy];
-
-    if (_webView != nil) {
-      [self visitSource];
-    }
-  }
-}
-
 - (void)setContentInset:(UIEdgeInsets)contentInset
 {
 #if !TARGET_OS_OSX
@@ -869,7 +843,6 @@ RCTAutoInsetsProtocol>
 
   NSURLRequest *request = [self requestForSource:_source];
   __weak WKWebView *webView = _webView;
-  NSString *allowingReadAccessToURL = _allowingReadAccessToURL;
 
   [self syncCookiesToWebView:^{
     // Add observer to sync cookies from webview to sharedHTTPCookieStorage
@@ -887,13 +860,12 @@ RCTAutoInsetsProtocol>
       [webView loadHTMLString:@"" baseURL:nil];
       return;
     }
-    if (request.URL.host) {
-      [webView loadRequest:request];
+    // Exodus: Block file:// URL loads for security
+    if ([request.URL.scheme isEqualToString:@"file"]) {
+      NSLog(@"RNCWebView: file:// URL loads are blocked for security");
+      return;
     }
-    else {
-      NSURL* readAccessUrl = allowingReadAccessToURL ? [RCTConvert NSURL:allowingReadAccessToURL] : request.URL;
-      [webView loadFileURL:request.URL allowingReadAccessToURL:readAccessUrl];
-    }
+    [webView loadRequest:request];
   }];
 }
 
@@ -1325,6 +1297,15 @@ RCTAutoInsetsProtocol>
                         initiatedByFrame:(WKFrameInfo *)frame
                                     type:(WKMediaCaptureType)type
                          decisionHandler:(void (^)(WKPermissionDecision decision))decisionHandler {
+  // Exodus: Check origin against camera permission whitelist
+  if (cameraPermissionOriginWhitelist != nil && cameraPermissionOriginWhitelist.count > 0) {
+    NSString *originHost = origin.host;
+    if (originHost == nil || ![cameraPermissionOriginWhitelist containsObject:originHost]) {
+      decisionHandler(WKPermissionDecisionDeny);
+      return;
+    }
+  }
+
   if (_mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt || _mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_GrantIfSameHost_ElseDeny) {
     if ([origin.host isEqualToString:webView.URL.host]) {
       decisionHandler(WKPermissionDecisionGrant);
@@ -1481,32 +1462,13 @@ RCTAutoInsetsProtocol>
   if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
     NSHTTPURLResponse *response = (NSHTTPURLResponse *)navigationResponse.response;
     NSInteger statusCode = response.statusCode;
-    if (_onHttpError && navigationResponse.forMainFrame) {
-      if (statusCode >= 400) {
-        NSMutableDictionary<NSString *, id> *httpErrorEvent = [self baseEvent];
-        [httpErrorEvent addEntriesFromDictionary: @{
-          @"url": response.URL.absoluteString,
-          @"statusCode": @(statusCode)
-        }];
-
-        _onHttpError(httpErrorEvent);
-      }
-    }
     NSString *disposition = nil;
     if (@available(iOS 13, macOS 10.15, *)) {
       disposition = [response valueForHTTPHeaderField:@"Content-Disposition"];
     }
     BOOL isAttachment = disposition != nil && [disposition hasPrefix:@"attachment"];
     if (isAttachment || !navigationResponse.canShowMIMEType) {
-      if (_onFileDownload) {
-        policy = WKNavigationResponsePolicyCancel;
-
-        NSMutableDictionary<NSString *, id> *downloadEvent = [self baseEvent];
-        [downloadEvent addEntriesFromDictionary: @{
-          @"downloadUrl": (response.URL).absoluteString,
-        }];
-        _onFileDownload(downloadEvent);
-      }
+      policy = WKNavigationResponsePolicyCancel;
     }
   }
 
@@ -1747,7 +1709,7 @@ didFinishNavigation:(WKNavigation *)navigation
 
   self.atEndScript = source == nil ? nil : [[WKUserScript alloc] initWithSource:source
                                                                   injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
-                                                               forMainFrameOnly:_injectedJavaScriptForMainFrameOnly];
+                                                               forMainFrameOnly:YES];
 
   if(_webView != nil){
     [self resetupScripts:_webView.configuration];
@@ -1787,21 +1749,11 @@ didFinishNavigation:(WKNavigation *)navigation
 
   self.atStartScript = source == nil ? nil : [[WKUserScript alloc] initWithSource:source
                                                                     injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                                 forMainFrameOnly:_injectedJavaScriptBeforeContentLoadedForMainFrameOnly];
+                                                                 forMainFrameOnly:YES];
 
   if(_webView != nil){
     [self resetupScripts:_webView.configuration];
   }
-}
-
-- (void)setInjectedJavaScriptForMainFrameOnly:(BOOL)mainFrameOnly {
-  _injectedJavaScriptForMainFrameOnly = mainFrameOnly;
-  [self setInjectedJavaScript:_injectedJavaScript];
-}
-
-- (void)setInjectedJavaScriptBeforeContentLoadedForMainFrameOnly:(BOOL)mainFrameOnly {
-  _injectedJavaScriptBeforeContentLoadedForMainFrameOnly = mainFrameOnly;
-  [self setInjectedJavaScriptBeforeContentLoaded:_injectedJavaScriptBeforeContentLoaded];
 }
 
 - (void)setMessagingEnabled:(BOOL)messagingEnabled {

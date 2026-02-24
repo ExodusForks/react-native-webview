@@ -2,6 +2,7 @@ import { Linking } from 'react-native';
 
 import {
   defaultOriginWhitelist,
+  defaultDeeplinkWhitelist,
   createOnShouldStartLoadWithRequest,
 } from '../WebViewShared';
 
@@ -48,7 +49,8 @@ describe('WebViewShared', () => {
     test('loadRequest is called without onShouldStartLoadWithRequest override', async () => {
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
-        defaultOriginWhitelist
+        defaultOriginWhitelist,
+        defaultDeeplinkWhitelist
       );
 
       onShouldStartLoadWithRequest({
@@ -65,10 +67,11 @@ describe('WebViewShared', () => {
       );
     });
 
-    test('Linking.openURL is called without onShouldStartLoadWithRequest override', async () => {
+    test('non-whitelisted protocol is blocked without calling Linking.openURL', async () => {
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
-        defaultOriginWhitelist
+        defaultOriginWhitelist,
+        defaultDeeplinkWhitelist
       );
 
       onShouldStartLoadWithRequest({
@@ -77,7 +80,8 @@ describe('WebViewShared', () => {
 
       await flushPromises();
 
-      expect(Linking.openURL).toHaveBeenCalledWith('invalid://example.com/');
+      // Exodus: non-whitelisted protocols are blocked, not opened
+      expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenCalledWith(
         false,
         'invalid://example.com/',
@@ -89,6 +93,7 @@ describe('WebViewShared', () => {
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
         defaultOriginWhitelist,
+        defaultDeeplinkWhitelist,
         alwaysTrueOnShouldStartLoadWithRequest
       );
 
@@ -106,10 +111,11 @@ describe('WebViewShared', () => {
       );
     });
 
-    test('Linking.openURL with true onShouldStartLoadWithRequest override is called for links not passing the whitelist', async () => {
+    test('non-whitelisted protocol is blocked even with true onShouldStartLoadWithRequest override', async () => {
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
         defaultOriginWhitelist,
+        defaultDeeplinkWhitelist,
         alwaysTrueOnShouldStartLoadWithRequest
       );
 
@@ -119,11 +125,8 @@ describe('WebViewShared', () => {
 
       await flushPromises();
 
-      expect(Linking.openURL).toHaveBeenLastCalledWith(
-        'invalid://example.com/'
-      );
-      // We don't expect the URL to have been loaded in the WebView because it
-      // is not in the origin whitelist
+      // Exodus: non-whitelisted protocols are blocked, not opened
+      expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenLastCalledWith(
         false,
         'invalid://example.com/',
@@ -135,6 +138,7 @@ describe('WebViewShared', () => {
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
         defaultOriginWhitelist,
+        defaultDeeplinkWhitelist,
         alwaysFalseOnShouldStartLoadWithRequest
       );
 
@@ -155,7 +159,8 @@ describe('WebViewShared', () => {
     test('loadRequest with limited whitelist', async () => {
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
-        ['https://*']
+        ['https://*'],
+        defaultDeeplinkWhitelist
       );
 
       onShouldStartLoadWithRequest({
@@ -171,43 +176,42 @@ describe('WebViewShared', () => {
         1
       );
 
+      // Exodus: http:// is in the default blocklist, so it's blocked without Linking.openURL
       onShouldStartLoadWithRequest({
         nativeEvent: { url: 'http://insecure.com/', lockIdentifier: 2 },
       });
 
       await flushPromises();
 
-      expect(Linking.openURL).toHaveBeenLastCalledWith('http://insecure.com/');
+      expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenLastCalledWith(
         false,
         'http://insecure.com/',
         2
       );
 
+      // Exodus: git+https:// is not in the deeplink whitelist, so it's blocked
       onShouldStartLoadWithRequest({
         nativeEvent: { url: 'git+https://insecure.com/', lockIdentifier: 3 },
       });
 
       await flushPromises();
 
-      expect(Linking.openURL).toHaveBeenLastCalledWith(
-        'git+https://insecure.com/'
-      );
+      expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenLastCalledWith(
         false,
         'git+https://insecure.com/',
         3
       );
 
+      // Exodus: fakehttps:// is not in the deeplink whitelist, so it's blocked
       onShouldStartLoadWithRequest({
         nativeEvent: { url: 'fakehttps://insecure.com/', lockIdentifier: 4 },
       });
 
       await flushPromises();
 
-      expect(Linking.openURL).toHaveBeenLastCalledWith(
-        'fakehttps://insecure.com/'
-      );
+      expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenLastCalledWith(
         false,
         'fakehttps://insecure.com/',
@@ -215,16 +219,16 @@ describe('WebViewShared', () => {
       );
     });
 
-    test('loadRequest allows for valid URIs', async () => {
+    test('loadRequest allows for valid URIs matching origin whitelist', async () => {
+      // Exodus: Use lowercase schemes since URL API normalizes scheme to lowercase
       const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
         loadRequest,
         [
           'plus+https://*',
-          'DOT.https://*',
+          'dot.https://*',
           'dash-https://*',
-          '0invalid://*',
-          '+invalid://*',
-        ]
+        ],
+        defaultDeeplinkWhitelist
       );
 
       onShouldStartLoadWithRequest({
@@ -243,7 +247,7 @@ describe('WebViewShared', () => {
       );
 
       onShouldStartLoadWithRequest({
-        nativeEvent: { url: 'DOT.https://www.example.com/', lockIdentifier: 2 },
+        nativeEvent: { url: 'dot.https://www.example.com/', lockIdentifier: 2 },
       });
 
       await flushPromises();
@@ -251,7 +255,7 @@ describe('WebViewShared', () => {
       expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenLastCalledWith(
         true,
-        'DOT.https://www.example.com/',
+        'dot.https://www.example.com/',
         2
       );
 
@@ -270,53 +274,27 @@ describe('WebViewShared', () => {
         'dash-https://www.example.com/',
         3
       );
+    });
 
+    test('non-whitelisted protocols are blocked without Linking.openURL', async () => {
+      const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
+        loadRequest,
+        ['https://*'],
+        defaultDeeplinkWhitelist
+      );
+
+      // Exodus: non-whitelisted protocols are blocked, not opened via Linking
       onShouldStartLoadWithRequest({
-        nativeEvent: { url: '0invalid://www.example.com/', lockIdentifier: 4 },
+        nativeEvent: { url: '0invalid://www.example.com/', lockIdentifier: 1 },
       });
 
       await flushPromises();
 
-      expect(Linking.openURL).toHaveBeenLastCalledWith(
-        '0invalid://www.example.com/'
-      );
+      expect(Linking.openURL).toHaveBeenCalledTimes(0);
       expect(loadRequest).toHaveBeenLastCalledWith(
         false,
         '0invalid://www.example.com/',
-        4
-      );
-
-      onShouldStartLoadWithRequest({
-        nativeEvent: { url: '+invalid://www.example.com/', lockIdentifier: 5 },
-      });
-
-      await flushPromises();
-
-      expect(Linking.openURL).toHaveBeenLastCalledWith(
-        '+invalid://www.example.com/'
-      );
-      expect(loadRequest).toHaveBeenLastCalledWith(
-        false,
-        '+invalid://www.example.com/',
-        5
-      );
-
-      onShouldStartLoadWithRequest({
-        nativeEvent: {
-          url: 'FAKE+plus+https://www.example.com/',
-          lockIdentifier: 6,
-        },
-      });
-
-      await flushPromises();
-
-      expect(Linking.openURL).toHaveBeenLastCalledWith(
-        'FAKE+plus+https://www.example.com/'
-      );
-      expect(loadRequest).toHaveBeenLastCalledWith(
-        false,
-        'FAKE+plus+https://www.example.com/',
-        6
+        1
       );
     });
   });

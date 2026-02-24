@@ -17,7 +17,6 @@ type WebViewCommands =
   | 'reload'
   | 'stopLoading'
   | 'postMessage'
-  | 'injectJavaScript'
   | 'loadUrl'
   | 'requestFocus'
   | 'clearCache';
@@ -34,8 +33,6 @@ export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<
   WebViewCommands | AndroidWebViewCommands
 >;
 export type RNCWebViewUIManagerIOS = RNCWebViewUIManager<WebViewCommands>;
-export type RNCWebViewUIManagerMacOS = RNCWebViewUIManager<WebViewCommands>;
-export type RNCWebViewUIManagerWindows = RNCWebViewUIManager<WebViewCommands>;
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
 
@@ -56,16 +53,6 @@ interface ErrorState extends BaseState {
 export type State = NormalState | ErrorState;
 
 type Constructor<T> = new (...args: any[]) => T;
-
-declare class NativeWebViewMacOSComponent extends Component<MacOSNativeWebViewProps> {}
-declare const NativeWebViewMacOSBase: Constructor<NativeMethodsMixin> &
-  typeof NativeWebViewMacOSComponent;
-export class NativeWebViewMacOS extends NativeWebViewMacOSBase {}
-
-declare class NativeWebViewWindowsComponent extends Component<WindowsNativeWebViewProps> {}
-declare const NativeWebViewWindowsBase: Constructor<NativeMethodsMixin> &
-  typeof NativeWebViewWindowsComponent;
-export class NativeWebViewWindows extends NativeWebViewWindowsBase {}
 
 export interface ContentInsetProp {
   top?: number;
@@ -102,10 +89,6 @@ export interface ShouldStartLoadRequest extends WebViewNavigation {
   isTopFrame: boolean;
 }
 
-export interface FileDownload {
-  downloadUrl: string;
-}
-
 export type DecelerationRateConstant = 'normal' | 'fast';
 
 export interface WebViewMessage extends WebViewNativeEvent {
@@ -114,16 +97,11 @@ export interface WebViewMessage extends WebViewNativeEvent {
 
 export interface WebViewError extends WebViewNativeEvent {
   /**
-   * `domain` is only used on iOS and macOS
+   * `domain` is only used on iOS
    */
   domain?: string;
   code: number;
   description: string;
-}
-
-export interface WebViewHttpError extends WebViewNativeEvent {
-  description: string;
-  statusCode: number;
 }
 
 export interface WebViewRenderProcessGoneDetail {
@@ -144,15 +122,11 @@ export type WebViewNavigationEvent = NativeSyntheticEvent<WebViewNavigation>;
 export type ShouldStartLoadRequestEvent =
   NativeSyntheticEvent<ShouldStartLoadRequest>;
 
-export type FileDownloadEvent = NativeSyntheticEvent<FileDownload>;
-
 export type WebViewMessageEvent = NativeSyntheticEvent<WebViewMessage>;
 
 export type WebViewErrorEvent = NativeSyntheticEvent<WebViewError>;
 
 export type WebViewTerminatedEvent = NativeSyntheticEvent<WebViewNativeEvent>;
-
-export type WebViewHttpErrorEvent = NativeSyntheticEvent<WebViewHttpError>;
 
 export type WebViewRenderProcessGoneEvent =
   NativeSyntheticEvent<WebViewRenderProcessGoneDetail>;
@@ -254,23 +228,6 @@ export interface ViewManager {
   shouldStartLoadWithLockIdentifier: Function;
 }
 
-export interface WebViewNativeConfig {
-  /**
-   * The native component used to render the WebView.
-   */
-  component?: typeof NativeWebViewMacOS | typeof NativeWebViewComponent;
-  /**
-   * Set props directly on the native component WebView. Enables custom props which the
-   * original WebView doesn't pass through.
-   */
-  props?: Object;
-  /**
-   * Set the ViewManager to use for communication with the native side.
-   * @platform ios, macos
-   */
-  viewManager?: ViewManager;
-}
-
 export type OnShouldStartLoadWithRequest = (
   event: ShouldStartLoadRequest
 ) => boolean;
@@ -292,9 +249,6 @@ export interface CommonNativeWebViewProps extends ViewProps {
   incognito?: boolean;
   injectedJavaScript?: string;
   injectedJavaScriptBeforeContentLoaded?: string;
-  injectedJavaScriptForMainFrameOnly?: boolean;
-  injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
-  javaScriptCanOpenWindowsAutomatically?: boolean;
   mediaPlaybackRequiresUserAction?: boolean;
   webviewDebuggingEnabled?: boolean;
   messagingEnabled: boolean;
@@ -308,7 +262,6 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLoadingFinish: (event: WebViewNavigationEvent) => void;
   onLoadingProgress: (event: WebViewProgressEvent) => void;
   onLoadingStart: (event: WebViewNavigationEvent) => void;
-  onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: ShouldStartLoadRequestEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
@@ -318,10 +271,6 @@ export interface CommonNativeWebViewProps extends ViewProps {
 
   source: any;
   userAgent?: string;
-  /**
-   * Append to the existing user-agent. Overridden if `userAgent` is set.
-   */
-  applicationNameForUserAgent?: string;
   basicAuthCredential?: BasicAuthCredential;
 }
 
@@ -339,63 +288,6 @@ export declare type MediaCapturePermissionGrantType =
   | 'prompt';
 
 export declare type ContentMode = 'recommended' | 'mobile' | 'desktop';
-
-export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
-  allowingReadAccessToURL?: string;
-  allowFileAccessFromFileURLs?: boolean;
-  allowUniversalAccessFromFileURLs?: boolean;
-  allowsBackForwardNavigationGestures?: boolean;
-  allowsInlineMediaPlayback?: boolean;
-  allowsPictureInPictureMediaPlayback?: boolean;
-  allowsAirPlayForMediaPlayback?: boolean;
-  allowsLinkPreview?: boolean;
-  automaticallyAdjustContentInsets?: boolean;
-  bounces?: boolean;
-  contentInset?: ContentInsetProp;
-  contentInsetAdjustmentBehavior?: ContentInsetAdjustmentBehavior;
-  directionalLockEnabled?: boolean;
-  hideKeyboardAccessoryView?: boolean;
-  javaScriptEnabled?: boolean;
-  pagingEnabled?: boolean;
-  scrollEnabled?: boolean;
-  useSharedProcessPool?: boolean;
-  onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
-}
-
-export interface WindowsNativeWebViewProps extends CommonNativeWebViewProps {
-  testID?: string;
-  linkHandlingEnabled?: boolean;
-  onOpenWindow?: (event: WebViewOpenWindowEvent) => void;
-  onSourceChanged?: (event: WebViewNavigationEvent) => void;
-}
-
-export interface WindowsWebViewProps extends WebViewSharedProps {
-  /**
-   * Boolean value that detenmines whether the web view should use the new chromium based edge webview.
-   */
-  useWebView2?: boolean;
-  /**
-   * Function that is invoked when the `WebView` should open a new window.
-   *
-   * This happens when the JS calls `window.open('http://someurl', '_blank')`
-   * or when the user clicks on a `<a href="http://someurl" target="_blank">` link.
-   *
-   * Only works with `useWebView2` set to `true`.
-   *
-   * @platform windows
-   */
-  onOpenWindow?: (event: WebViewOpenWindowEvent) => void;
-
-  /**
-   * Function that is invoked when the `WebView` responds to a request to load a new resource.
-   * Works only on Windows.
-   *
-   * Only works with `useWebView2` set to `true`.
-   *
-   * @platform windows
-   */
-  onSourceChanged?: (event: WebViewNavigationEvent) => void;
-}
 
 export interface IOSWebViewProps extends WebViewSharedProps {
   /**
@@ -518,14 +410,9 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * Boolean value that indicates whether HTML5 videos can play Picture in Picture.
    * The default value is `true`.
    *
-   * @platform macos
-   */
-  allowsPictureInPictureMediaPlayback?: boolean;
-  /**
-   * A Boolean value indicating whether AirPlay is allowed. The default value is `false`.
    * @platform ios
    */
-  allowsAirPlayForMediaPlayback?: boolean;
+  allowsPictureInPictureMediaPlayback?: boolean;
   /**
    * Hide the accessory view when the keyboard is open. Default is false to be
    * backward compatible.
@@ -602,33 +489,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   keyboardDisplayRequiresUserAction?: boolean;
 
   /**
-   * A String value that indicates which URLs the WebView's file can then
-   * reference in scripts, AJAX requests, and CSS imports. This is only used
-   * for WebViews that are loaded with a source.uri set to a `'file://'` URL.
-   *
-   * If not provided, the default is to only allow read access to the URL
-   * provided in source.uri itself.
-   * @platform ios
-   */
-  allowingReadAccessToURL?: string;
-
-  /**
-   * Boolean that sets whether JavaScript running in the context of a file
-   * scheme URL should be allowed to access content from other file scheme URLs.
-   * Including accessing content from other file scheme URLs
-   * @platform ios
-   */
-  allowFileAccessFromFileURLs?: boolean;
-
-  /**
-   * Boolean that sets whether JavaScript running in the context of a file
-   * scheme URL should be allowed to access content from any origin.
-   * Including accessing content from other file scheme URLs
-   * @platform ios
-   */
-  allowUniversalAccessFromFileURLs?: boolean;
-
-  /**
    * Function that is invoked when the WebKit WebView content process gets terminated.
    * @platform ios
    */
@@ -643,20 +503,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   onOpenWindow?: (event: WebViewOpenWindowEvent) => void;
-
-  /**
-   * If `true` (default), loads the `injectedJavaScript` only into the main frame.
-   * If `false`, loads it into all frames (e.g. iframes).
-   * @platform ios
-   */
-  injectedJavaScriptForMainFrameOnly?: boolean;
-
-  /**
-   * If `true` (default), loads the `injectedJavaScriptBeforeContentLoaded` only into the main frame.
-   * If `false`, loads it into all frames (e.g. iframes).
-   * @platform ios
-   */
-  injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
 
   /**
    * Boolean value that determines whether a pull to refresh gesture is
@@ -687,24 +533,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   indicatorStyle?: IndicatorStyleType;
-
-  /**
-   * Function that is invoked when the client needs to download a file.
-   *
-   * iOS 13+ only: If the webview navigates to a URL that results in an HTTP
-   * response with a Content-Disposition header 'attachment...', then
-   * this will be called.
-   *
-   * iOS 8+: If the MIME type indicates that the content is not renderable by the
-   * webview, that will also cause this to be called. On iOS versions before 13,
-   * this is the only condition that will cause this function to be called.
-   *
-   * The application will need to provide its own code to actually download
-   * the file.
-   *
-   * If not provided, the default is to let the webview try to render the file.
-   */
-  onFileDownload?: (event: FileDownloadEvent) => void;
 
   /**
    * A Boolean value which, when set to `true`, indicates to WebKit that a WKWebView
@@ -799,171 +627,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   unsupportedVersionComponent?: ElementType;
 }
 
-export interface MacOSWebViewProps extends WebViewSharedProps {
-  /**
-   * Does not store any data within the lifetime of the WebView.
-   */
-  incognito?: boolean;
-
-  /**
-   * Boolean value that determines whether the web view bounces
-   * when it reaches the edge of the content. The default value is `true`.
-   * @platform macos
-   */
-  bounces?: boolean;
-
-  /**
-   * Boolean value that determines whether scrolling is enabled in the
-   * `WebView`. The default value is `true`.
-   * @platform macos
-   */
-  scrollEnabled?: boolean;
-
-  /**
-   * If the value of this property is true, the scroll view stops on multiples
-   * of the scroll view's bounds when the user scrolls.
-   * The default value is false.
-   * @platform macos
-   */
-  pagingEnabled?: boolean;
-
-  /**
-   * Controls whether to adjust the content inset for web views that are
-   * placed behind a navigation bar, tab bar, or toolbar. The default value
-   * is `true`.
-   * @platform macos
-   */
-  automaticallyAdjustContentInsets?: boolean;
-
-  /**
-   * This property specifies how the safe area insets are used to modify the
-   * content area of the scroll view. The default value of this property is
-   * "never". Available on iOS 11 and later.
-   */
-  contentInsetAdjustmentBehavior?: ContentInsetAdjustmentBehavior;
-
-  /**
-   * The amount by which the web view content is inset from the edges of
-   * the scroll view. Defaults to {top: 0, left: 0, bottom: 0, right: 0}.
-   * @platform macos
-   */
-  contentInset?: ContentInsetProp;
-
-  /**
-   * Boolean that determines whether HTML5 videos play inline or use the
-   * native full-screen controller. The default value is `false`.
-   *
-   * **NOTE** : In order for video to play inline, not only does this
-   * property need to be set to `true`, but the video element in the HTML
-   * document must also include the `webkit-playsinline` attribute.
-   * @platform macos
-   */
-  allowsInlineMediaPlayback?: boolean;
-  /**
-   * Boolean value that indicates whether HTML5 videos can play Picture in Picture.
-   * The default value is `true`.
-   *
-   * @platform ios
-   */
-  allowsPictureInPictureMediaPlayback?: boolean;
-  /**
-   * A Boolean value indicating whether AirPlay is allowed. The default value is `false`.
-   * @platform macos
-   */
-  allowsAirPlayForMediaPlayback?: boolean;
-  /**
-   * Hide the accessory view when the keyboard is open. Default is false to be
-   * backward compatible.
-   */
-  hideKeyboardAccessoryView?: boolean;
-  /**
-   * A Boolean value indicating whether horizontal swipe gestures will trigger
-   * back-forward list navigations.
-   */
-  allowsBackForwardNavigationGestures?: boolean;
-  /**
-   * A Boolean value indicating whether WebKit WebView should be created using a shared
-   * process pool, enabling WebViews to share cookies and localStorage between each other.
-   * Default is true but can be set to false for backwards compatibility.
-   * @platform macos
-   */
-  useSharedProcessPool?: boolean;
-
-  /**
-   * The custom user agent string.
-   */
-  userAgent?: string;
-
-  /**
-   * A Boolean value that determines whether pressing on a link
-   * displays a preview of the destination for the link.
-   *
-   * This property is available on devices that support Force Touch trackpad.
-   * @platform macos
-   */
-  allowsLinkPreview?: boolean;
-
-  /**
-   * Set true if shared cookies from HTTPCookieStorage should used for every load request.
-   * The default value is `false`.
-   * @platform macos
-   */
-  sharedCookiesEnabled?: boolean;
-
-  /**
-   * A Boolean value that determines whether scrolling is disabled in a particular direction.
-   * The default value is `true`.
-   * @platform macos
-   */
-  directionalLockEnabled?: boolean;
-
-  /**
-   * A Boolean value indicating whether web content can programmatically display the keyboard.
-   *
-   * When this property is set to true, the user must explicitly tap the elements in the
-   * web view to display the keyboard (or other relevant input view) for that element.
-   * When set to false, a focus event on an element causes the input view to be displayed
-   * and associated with that element automatically.
-   *
-   * The default value is `true`.
-   * @platform macos
-   */
-  keyboardDisplayRequiresUserAction?: boolean;
-
-  /**
-   * A String value that indicates which URLs the WebView's file can then
-   * reference in scripts, AJAX requests, and CSS imports. This is only used
-   * for WebViews that are loaded with a source.uri set to a `'file://'` URL.
-   *
-   * If not provided, the default is to only allow read access to the URL
-   * provided in source.uri itself.
-   * @platform macos
-   */
-  allowingReadAccessToURL?: string;
-
-  /**
-   * Boolean that sets whether JavaScript running in the context of a file
-   * scheme URL should be allowed to access content from other file scheme URLs.
-   * Including accessing content from other file scheme URLs
-   * @platform macos
-   */
-  allowFileAccessFromFileURLs?: boolean;
-
-  /**
-   * Boolean that sets whether JavaScript running in the context of a file
-   * scheme URL should be allowed to access content from any origin.
-   * Including accessing content from other file scheme URLs
-   * @platform macos
-   */
-  allowUniversalAccessFromFileURLs?: boolean;
-
-  /**
-   * Function that is invoked when the WebKit WebView content process gets terminated.
-   * @platform macos
-   */
-  onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
-}
-
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
@@ -1021,28 +684,6 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   geolocationEnabled?: boolean;
-
-  /**
-   * Boolean that sets whether JavaScript running in the context of a file
-   * scheme URL should be allowed to access content from other file scheme URLs.
-   * Including accessing content from other file scheme URLs
-   * @platform android
-   */
-  allowFileAccessFromFileURLs?: boolean;
-
-  /**
-   * Boolean that sets whether JavaScript running in the context of a file
-   * scheme URL should be allowed to access content from any origin.
-   * Including accessing content from other file scheme URLs
-   * @platform android
-   */
-  allowUniversalAccessFromFileURLs?: boolean;
-
-  /**
-   * Sets whether the webview allow access to file system.
-   * @platform android
-   */
-  allowFileAccess?: boolean;
 
   /**
    * Used on Android only, controls whether form autocomplete data should be saved
@@ -1218,12 +859,6 @@ export interface WebViewSharedProps extends ViewProps {
   javaScriptEnabled?: boolean;
 
   /**
-   * A Boolean value indicating whether JavaScript can open windows without user interaction.
-   * The default value is `false`.
-   */
-  javaScriptCanOpenWindowsAutomatically?: boolean;
-
-  /**
    * Stylesheet object to set the style of the container view.
    */
   containerStyle?: StyleProp<ViewStyle>;
@@ -1268,12 +903,6 @@ export interface WebViewSharedProps extends ViewProps {
   onError?: (event: WebViewErrorEvent) => void;
 
   /**
-   * Function that is invoked when the `WebView` receives an error status code.
-   * Works on iOS and Android (minimum API level 23).
-   */
-  onHttpError?: (event: WebViewHttpErrorEvent) => void;
-
-  /**
    * Function that is invoked when the `WebView` loading starts or ends.
    */
   onNavigationStateChange?: (event: WebViewNavigation) => void;
@@ -1311,18 +940,6 @@ export interface WebViewSharedProps extends ViewProps {
    * once the webview is initialized but before the view loads any content.
    */
   injectedJavaScriptBeforeContentLoaded?: string;
-
-  /**
-   * If `true` (default; mandatory for Android), loads the `injectedJavaScript` only into the main frame.
-   * If `false` (only supported on iOS and macOS), loads it into all frames (e.g. iframes).
-   */
-  injectedJavaScriptForMainFrameOnly?: boolean;
-
-  /**
-   * If `true` (default; mandatory for Android), loads the `injectedJavaScriptBeforeContentLoaded` only into the main frame.
-   * If `false` (only supported on iOS and macOS), loads it into all frames (e.g. iframes).
-   */
-  injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
 
   /**
    * Boolean value that determines whether a horizontal scroll indicator is
@@ -1367,20 +984,9 @@ export interface WebViewSharedProps extends ViewProps {
   onShouldStartLoadWithRequest?: OnShouldStartLoadWithRequest;
 
   /**
-   * Override the native component used to render the WebView. Enables a custom native
-   * WebView which uses the same JavaScript as the original WebView.
-   */
-  nativeConfig?: WebViewNativeConfig;
-
-  /**
    * Should caching be enabled. Default is true.
    */
   cacheEnabled?: boolean;
-
-  /**
-   * Append to the existing user-agent. Overridden if `userAgent` is set.
-   */
-  applicationNameForUserAgent?: string;
 
   /**
    * An object that specifies the credentials of a user to be used for basic authentication.

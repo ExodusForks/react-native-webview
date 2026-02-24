@@ -157,8 +157,16 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
         // Exodus: Build origin string for whitelist check
         final Uri originUri = request.getOrigin();
         final String scheme = originUri.getScheme();
+        final String host = originUri.getHost();
         final int port = originUri.getPort();
-        String origin = scheme + "://" + originUri.getHost();
+
+        // Exodus: Deny permission if host is null (malformed origin)
+        if (host == null) {
+            request.deny();
+            return;
+        }
+
+        String origin = scheme + "://" + host;
 
         if (port > 0 && (("http".equals(scheme) && port != 80) || ("https".equals(scheme) && port != 443))) {
             origin += ":" + port;
@@ -177,17 +185,11 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
                     androidPermission = Manifest.permission.CAMERA;
                 }
             } else if(requestedResource.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
+                // Exodus: Only grant if allowsProtectedMedia is enabled.
+                // RESOURCE_PROTECTED_MEDIA_ID is not a real Android permission,
+                // so it cannot be passed to checkSelfPermission.
                 if (mAllowsProtectedMedia) {
                   grantedPermissions.add(requestedResource);
-                } else {
-                  /**
-                   * Legacy handling (Kept in case it was working under some conditions (given Android version or something))
-                   *
-                   * Try to ask user to grant permission using Activity.requestPermissions
-                   *
-                   * Find more details here: https://github.com/react-native-webview/react-native-webview/pull/2732
-                   */
-                  androidPermission = PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID;
                 }
             }
             // TODO: RESOURCE_MIDI_SYSEX, RESOURCE_PROTECTED_MEDIA_ID.
@@ -235,7 +237,8 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
             requestPermissions(Collections.singletonList(Manifest.permission.ACCESS_FINE_LOCATION));
 
         } else {
-            callback.invoke(origin, true, false);
+            // Exodus: Deny geolocation by default for security
+            callback.invoke(origin, false, false);
         }
     }
 
@@ -319,12 +322,6 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
                 shouldAnswerToPermissionRequest = true;
             }
 
-            if (permission.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
-                if (granted && grantedPermissions != null) {
-                    grantedPermissions.add(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID);
-                }
-                shouldAnswerToPermissionRequest = true;
-            }
         }
 
         if (shouldAnswerToPermissionRequest

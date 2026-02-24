@@ -48,7 +48,6 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
     private var mPendingSource: ReadableMap? = null
 
     private var mUserAgent: String? = null
-    private var mUserAgentWithApplicationName: String? = null
     private val HTML_ENCODING = "UTF-8"
     private val HTML_MIME_TYPE = "text/html"
     private val HTTP_METHOD_POST = "POST"
@@ -84,6 +83,8 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         settings.allowFileAccessFromFileURLs = false
         settings.allowUniversalAccessFromFileURLs = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        // Exodus: Force javaScriptCanOpenWindowsAutomatically = false for security
+        settings.javaScriptCanOpenWindowsAutomatically = false
 
         // Fixes broken full-screen modals/galleries due to body height being 0.
         webView.layoutParams = ViewGroup.LayoutParams(
@@ -114,7 +115,9 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
                 urlObj = URL(url)
                 val baseUrl = urlObj.protocol + "://" + urlObj.host
                 val cookie = CookieManager.getInstance().getCookie(baseUrl)
-                request.addRequestHeader("Cookie", cookie)
+                if (cookie != null) {
+                    request.addRequestHeader("Cookie", cookie)
+                }
             } catch (e: MalformedURLException) {
                 Log.w(TAG, "Error getting cookie for DownloadManager", e)
             }
@@ -230,27 +233,11 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         setUserAgentString(viewWrapper)
     }
 
-    fun setApplicationNameForUserAgent(viewWrapper: RNCWebViewWrapper, applicationName: String?) {
-        when {
-            applicationName != null -> {
-                val defaultUserAgent = WebSettings.getDefaultUserAgent(viewWrapper.webView.context)
-                mUserAgentWithApplicationName = "$defaultUserAgent $applicationName"
-            }
-            else -> {
-                mUserAgentWithApplicationName = null
-            }
-        }
-        setUserAgentString(viewWrapper)
-    }
-
     private fun setUserAgentString(viewWrapper: RNCWebViewWrapper) {
         val view = viewWrapper.webView
         when {
             mUserAgent != null -> {
                 view.settings.userAgentString = mUserAgent
-            }
-            mUserAgentWithApplicationName != null -> {
-                view.settings.userAgentString = mUserAgentWithApplicationName
             }
             else -> {
                 view.settings.userAgentString = WebSettings.getDefaultUserAgent(view.context)
@@ -289,7 +276,6 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
     val COMMAND_RELOAD = 3
     val COMMAND_STOP_LOADING = 4
     val COMMAND_POST_MESSAGE = 5
-    val COMMAND_INJECT_JAVASCRIPT = 6
     val COMMAND_LOAD_URL = 7
     val COMMAND_FOCUS = 8
 
@@ -305,7 +291,6 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         .put("reload", COMMAND_RELOAD)
         .put("stopLoading", COMMAND_STOP_LOADING)
         .put("postMessage", COMMAND_POST_MESSAGE)
-        .put("injectJavaScript", COMMAND_INJECT_JAVASCRIPT)
         .put("loadUrl", COMMAND_LOAD_URL)
         .put("requestFocus", COMMAND_FOCUS)
         .put("clearFormData", COMMAND_CLEAR_FORM_DATA)
@@ -340,7 +325,6 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         } catch (e: JSONException) {
           throw RuntimeException(e)
         }
-        "injectJavaScript" -> webView.evaluateJavascriptWithFallback(args.getString(0))
         "loadUrl" -> {
           val url = args?.getString(0) ?: throw RuntimeException("Arguments for loading an url are null!")
           webView.progressChangedFilter.setWaitingForCommandLoadUrl(false)
@@ -365,10 +349,6 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         } else if ("compatibility" == mixedContentMode) {
             view.settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
-    }
-
-    fun setAllowUniversalAccessFromFileURLs(viewWrapper: RNCWebViewWrapper, allow: Boolean) {
-        viewWrapper.webView.settings.allowUniversalAccessFromFileURLs = allow
     }
 
     private fun getDownloadingMessageOrDefault(): String? {
@@ -499,24 +479,9 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         view.injectedJSBeforeContentLoaded = value
     }
 
-    fun setInjectedJavaScriptForMainFrameOnly(viewWrapper: RNCWebViewWrapper, value: Boolean) {
-        val view = viewWrapper.webView
-        view.injectedJavaScriptForMainFrameOnly = value
-    }
-
-    fun setInjectedJavaScriptBeforeContentLoadedForMainFrameOnly(viewWrapper: RNCWebViewWrapper, value: Boolean) {
-        val view = viewWrapper.webView
-        view.injectedJavaScriptBeforeContentLoadedForMainFrameOnly = value
-    }
-
     fun setInjectedJavaScriptObject(viewWrapper: RNCWebViewWrapper, value: String?) {
         val view = viewWrapper.webView
         view.setInjectedJavaScriptObject(value)
-    }
-
-    fun setJavaScriptCanOpenWindowsAutomatically(viewWrapper: RNCWebViewWrapper, value: Boolean) {
-        val view = viewWrapper.webView
-        view.settings.javaScriptCanOpenWindowsAutomatically = value
     }
 
     fun setShowsVerticalScrollIndicator(viewWrapper: RNCWebViewWrapper, value: Boolean) {
@@ -547,16 +512,6 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
     fun setJavaScriptEnabled(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
         val view = viewWrapper.webView
         view.settings.javaScriptEnabled = enabled
-    }
-
-    fun setAllowFileAccess(viewWrapper: RNCWebViewWrapper, allowFileAccess: Boolean) {
-        val view = viewWrapper.webView
-        view.settings.allowFileAccess = allowFileAccess;
-    }
-
-    fun setAllowFileAccessFromFileURLs(viewWrapper: RNCWebViewWrapper, value: Boolean) {
-        val view = viewWrapper.webView
-        view.settings.allowFileAccessFromFileURLs = value;
     }
 
     fun setAllowsFullscreenVideo(viewWrapper: RNCWebViewWrapper, value: Boolean) {
