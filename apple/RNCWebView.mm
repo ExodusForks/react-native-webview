@@ -228,22 +228,6 @@ auto stringToOnLoadingFinishNavigationTypeEnum(std::string value) {
                 webViewEventEmitter->onScroll(data);
             }
         };
-        _view.onHttpError = [self](NSDictionary* dictionary) {
-            if (_eventEmitter) {
-                auto webViewEventEmitter = std::static_pointer_cast<RNCWebViewEventEmitter const>(_eventEmitter);
-                facebook::react::RNCWebViewEventEmitter::OnHttpError data = {
-                    .url = std::string([[dictionary valueForKey:@"url"] UTF8String]),
-                    .lockIdentifier = [[dictionary valueForKey:@"lockIdentifier"] doubleValue],
-                    .title = std::string([[dictionary valueForKey:@"title"] UTF8String]),
-                    .statusCode = [[dictionary valueForKey:@"statusCode"] intValue],
-                    .description = std::string([[dictionary valueForKey:@"description"] UTF8String] ?: ""),
-                    .canGoBack = static_cast<bool>([[dictionary valueForKey:@"canGoBack"] boolValue]),
-                    .canGoForward = static_cast<bool>([[dictionary valueForKey:@"canGoForward"] boolValue]),
-                    .loading = static_cast<bool>([[dictionary valueForKey:@"loading"] boolValue])
-                };
-                webViewEventEmitter->onHttpError(data);
-            }
-        };
         self.contentView = _view;
     }
     return self;
@@ -392,21 +376,6 @@ auto stringToOnLoadingFinishNavigationTypeEnum(std::string value) {
         }
 
         [_view setSuppressMenuItems:suppressMenuItems];
-    }
-    if (oldViewProps.hasOnFileDownload != newViewProps.hasOnFileDownload) {
-        if (newViewProps.hasOnFileDownload) {
-            _view.onFileDownload = [self](NSDictionary* dictionary) {
-                if (_eventEmitter) {
-                    auto webViewEventEmitter = std::static_pointer_cast<RNCWebViewEventEmitter const>(_eventEmitter);
-                    facebook::react::RNCWebViewEventEmitter::OnFileDownload data = {
-                        .downloadUrl = std::string([[dictionary valueForKey:@"downloadUrl"] UTF8String])
-                    };
-                    webViewEventEmitter->onFileDownload(data);
-                }
-            };
-        } else {
-            _view.onFileDownload = nil;
-        }
     }
     if (oldViewProps.hasOnOpenWindowEvent != newViewProps.hasOnOpenWindowEvent) {
         if (newViewProps.hasOnOpenWindowEvent) {

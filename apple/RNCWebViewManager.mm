@@ -43,12 +43,10 @@ RCT_EXPORT_MODULE(RNCWebView)
 RCT_EXPORT_VIEW_PROPERTY(source, NSDictionary)
 // New arch only
 RCT_CUSTOM_VIEW_PROPERTY(newSource, NSDictionary, RNCWebViewImpl) {}
-RCT_EXPORT_VIEW_PROPERTY(onFileDownload, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onLoadingStart, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onLoadingFinish, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onLoadingError, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onLoadingProgress, RCTDirectEventBlock)
-RCT_EXPORT_VIEW_PROPERTY(onHttpError, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onShouldStartLoadWithRequest, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onContentProcessDidTerminate, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onOpenWindow, RCTDirectEventBlock)
@@ -112,7 +110,6 @@ RCT_EXPORT_VIEW_PROPERTY(menuItems, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(suppressMenuItems, NSArray);
 
 // New arch only
-RCT_CUSTOM_VIEW_PROPERTY(hasOnFileDownload, BOOL, RNCWebViewImpl) {}
 RCT_CUSTOM_VIEW_PROPERTY(hasOnOpenWindowEvent, BOOL, RNCWebViewImpl) {}
 
 RCT_EXPORT_VIEW_PROPERTY(onCustomMenuSelection, RCTDirectEventBlock)

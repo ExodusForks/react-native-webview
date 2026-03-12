@@ -59,13 +59,6 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     protected @Nullable
     WebViewCompat.WebMessageListener bridgeListener = null;
 
-    /**
-     * android.webkit.WebChromeClient fundamentally does not support JS injection into frames other
-     * than the main frame, so these two properties are mostly here just for parity with iOS & macOS.
-     */
-    protected boolean injectedJavaScriptForMainFrameOnly = true;
-    protected boolean injectedJavaScriptBeforeContentLoadedForMainFrameOnly = true;
-
     protected boolean messagingEnabled = false;
     protected @Nullable
     String messagingModuleName;
