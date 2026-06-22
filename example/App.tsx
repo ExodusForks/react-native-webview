@@ -19,6 +19,7 @@ import Injection from './examples/Injection';
 import LocalPageLoad from './examples/LocalPageLoad';
 import Messaging from './examples/Messaging';
 import MultiMessaging from './examples/MultiMessaging';
+import IframeMessaging from './examples/IframeMessaging';
 import NativeWebpage from './examples/NativeWebpage';
 import ApplePay from './examples/ApplePay';
 import GooglePay from './examples/GooglePay';
@@ -43,6 +44,14 @@ const TESTS = {
     description: 'Multi js-webview postMessage messaging test',
     render() {
       return <MultiMessaging />;
+    },
+  },
+  IframeMessaging: {
+    title: 'IframeMessaging',
+    testId: 'iframemessaging',
+    description: 'Security: iframe postMessage must be blocked (top-frame only)',
+    render() {
+      return <IframeMessaging />;
     },
   },
   Alerts: {
@@ -255,6 +264,11 @@ export default class App extends Component<Props, State> {
             testID="testType_multimessaging"
             title="MultiMessaging"
             onPress={() => this._changeTest('MultiMessaging')}
+          />
+          <Button
+            testID="testType_iframemessaging"
+            title="IframeMessaging"
+            onPress={() => this._changeTest('IframeMessaging')}
           />
           <Button
             testID="testType_nativeWebpage"
