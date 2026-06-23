@@ -3,11 +3,15 @@
 /**
  * Exodus: Thread-safe singleton that manages navigation decision handlers.
  *
+ * All public methods use @synchronized for thread safety, and decision
+ * handlers are invoked outside the lock to avoid deadlocks
+ * (upstream react-native-webview#3916).
+ *
  * Security improvements over upstream:
  * - Uses NSInteger (64-bit) instead of int to prevent overflow
  * - Adds collision checking to skip identifiers still in use
- * - All public methods use @synchronized for thread safety
  * - Explicitly copies blocks to heap to prevent use-after-free
+ * - Denies navigation by default if JS does not respond within 500ms
  * - Provides cancelDecisionForLockIdentifier: for cleanup on WebView dealloc
  */
 @implementation RNCWebViewDecisionManager
@@ -40,14 +44,17 @@
         // if JS responded in time.
         NSInteger capturedIdentifier = lockIdentifier;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(500 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+            DecisionBlock pendingHandler;
             @synchronized (self) {
-                DecisionBlock pendingHandler = [self.decisionHandlers objectForKey:@(capturedIdentifier)];
-                if (pendingHandler != nil) {
-                    RCTLogWarn(@"Navigation decision timeout for lock %ld, denying by default", (long)capturedIdentifier);
-                    pendingHandler(NO);
-                    [self.decisionHandlers removeObjectForKey:@(capturedIdentifier)];
+                pendingHandler = [self.decisionHandlers objectForKey:@(capturedIdentifier)];
+                if (pendingHandler == nil) {
+                    return;
                 }
+                [self.decisionHandlers removeObjectForKey:@(capturedIdentifier)];
             }
+            // Invoke outside the lock, as in setResult:forLockIdentifier:.
+            RCTLogWarn(@"Navigation decision timeout for lock %ld, denying by default", (long)capturedIdentifier);
+            pendingHandler(NO);
         });
 
         return lockIdentifier;
@@ -55,15 +62,20 @@
 }
 
 - (void)setResult:(BOOL)shouldStart forLockIdentifier:(NSInteger)lockIdentifier {
+    // The handler is captured and removed under the lock, then invoked OUTSIDE
+    // it (upstream react-native-webview#3916). The handler hops to the main
+    // queue and can trigger another navigation that re-enters this class, so
+    // holding the lock across its invocation risks deadlock.
+    DecisionBlock handler;
     @synchronized (self) {
-        DecisionBlock handler = [self.decisionHandlers objectForKey:@(lockIdentifier)];
+        handler = [self.decisionHandlers objectForKey:@(lockIdentifier)];
         if (handler == nil) {
             RCTLogWarn(@"Lock not found for identifier: %ld", (long)lockIdentifier);
             return;
         }
-        handler(shouldStart);
         [self.decisionHandlers removeObjectForKey:@(lockIdentifier)];
     }
+    handler(shouldStart);
 }
 
 
