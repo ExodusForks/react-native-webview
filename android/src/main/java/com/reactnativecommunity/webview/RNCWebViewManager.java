@@ -985,8 +985,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     // Webview camera & audio permission callback
     protected PermissionRequest permissionRequest;
-    // Webview camera & audio permission already granted
-    protected List<String> grantedPermissions;
 
     // Webview geolocation permission callback
     protected GeolocationPermissions.Callback geolocationPermissionCallback;
@@ -1071,7 +1069,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onPermissionRequest(final PermissionRequest request) {
-      grantedPermissions = new ArrayList<>();
+      final List<String> grantedResources = new ArrayList<>();
 
       ArrayList<String> requestedAndroidPermissions = new ArrayList<>();
       final Uri originUri = request.getOrigin();
@@ -1084,7 +1082,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
 
       for (String requestedResource : request.getResources()) {
-        String androidPermission = null;
+        String androidPermission;
 
         if (this.cameraPermissionOriginWhitelist.contains(origin)) {
           if (requestedResource.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
@@ -1098,25 +1096,23 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           continue;
         }
 
-        if (androidPermission != null) {
-          if (ContextCompat.checkSelfPermission(mReactContext,
-              androidPermission) == PackageManager.PERMISSION_GRANTED) {
-            grantedPermissions.add(requestedResource);
-          } else {
-            requestedAndroidPermissions.add(androidPermission);
-          }
+        if (ContextCompat.checkSelfPermission(mReactContext,
+            androidPermission) == PackageManager.PERMISSION_GRANTED) {
+          grantedResources.add(requestedResource);
+        } else {
+          requestedAndroidPermissions.add(androidPermission);
         }
       }
 
-      // If all the permissions are already granted, send the response to the WebView
+      // If no native permissions are missing, send the response to the WebView
       // synchronously
       if (requestedAndroidPermissions.isEmpty()) {
-        if (grantedPermissions.isEmpty()) {
+        if (grantedResources.isEmpty()) {
           request.deny();
         } else {
-          request.grant(grantedPermissions.toArray(new String[0]));
+          request.grant(grantedResources.toArray(new String[0]));
         }
-        grantedPermissions = null;
+
         return;
       }
 
@@ -1135,20 +1131,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
               for (int i = 0; i < permissions.length; i++) {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                   if (permissions[i].equals(Manifest.permission.CAMERA)) {
-                    grantedPermissions.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+                    grantedResources.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
                   } else if (permissions[i].equals(Manifest.permission.RECORD_AUDIO)) {
-                    grantedPermissions.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+                    grantedResources.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
                   }
                 }
               }
 
-              if (grantedPermissions.size() == requestedAndroidPermissions.size()) {
-                request.grant(grantedPermissions.toArray(new String[0]));
-              } else {
+              // Grant whatever was actually granted; deny only when nothing was
+              if (grantedResources.isEmpty()) {
                 request.deny();
+              } else {
+                request.grant(grantedResources.toArray(new String[0]));
               }
 
-              grantedPermissions = null;
               return true;
             }
           });
