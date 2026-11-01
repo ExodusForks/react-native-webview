@@ -29,7 +29,6 @@ import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
 import android.webkit.HttpAuthHandler;
-import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
@@ -46,7 +45,10 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.util.Pair;
+import androidx.webkit.JavaScriptReplyProxy;
+import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
 import com.facebook.common.logging.FLog;
@@ -1358,18 +1360,22 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     }
 
-    @SuppressLint("AddJavascriptInterface")
     public void setMessagingEnabled(boolean enabled) {
       if (messagingEnabled == enabled) {
+        return;
+      }
+
+      if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+        FLog.w(TAG, "WebView does not support WEB_MESSAGE_LISTENER, messaging is disabled.");
         return;
       }
 
       messagingEnabled = enabled;
 
       if (enabled) {
-        addJavascriptInterface(createRNCWebViewBridge(this), JAVASCRIPT_INTERFACE);
+        WebViewCompat.addWebMessageListener(this, JAVASCRIPT_INTERFACE, Collections.singleton("*"), createRNCWebViewBridge(this));
       } else {
-        removeJavascriptInterface(JAVASCRIPT_INTERFACE);
+        WebViewCompat.removeWebMessageListener(this, JAVASCRIPT_INTERFACE);
       }
     }
 
@@ -1397,7 +1403,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     }
 
-    public void onMessage(String message) {
+    public void onMessage(String message, String sourceOrigin) {
       ReactContext reactContext = (ReactContext) this.getContext();
       RNCWebView mContext = this;
 
@@ -1409,7 +1415,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
             if (mRNCWebViewClient == null) {
               return;
             }
-            WritableMap data = mRNCWebViewClient.createWebViewEvent(webView, webView.getUrl());
+            WritableMap data = mRNCWebViewClient.createWebViewEvent(webView, sourceOrigin);
             data.putString("data", message);
 
             if (mCatalystInstance != null) {
@@ -1489,7 +1495,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       super.destroy();
     }
 
-    protected class RNCWebViewBridge {
+    protected class RNCWebViewBridge implements WebViewCompat.WebMessageListener {
       RNCWebView mContext;
 
       RNCWebViewBridge(RNCWebView c) {
@@ -1500,9 +1506,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
        * This method is called whenever JavaScript running within the web view calls:
        * - window[JAVASCRIPT_INTERFACE].postMessage
        */
-      @JavascriptInterface
-      public void postMessage(String message) {
-        mContext.onMessage(message);
+      @Override
+      public void onPostMessage(@NonNull WebView view, @NonNull WebMessageCompat message, @NonNull Uri sourceOrigin, boolean isMainFrame, @NonNull JavaScriptReplyProxy replyProxy) {
+        String data;
+        try {
+          data = message.getData();
+        } catch (IllegalStateException e) {
+          return;
+        }
+        mContext.onMessage(data, sourceOrigin.toString());
       }
     }
 
