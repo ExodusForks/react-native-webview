@@ -24,6 +24,16 @@ static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
 static NSSet *cameraPermissionOriginWhitelist;
 
+static NSString *RNCOriginString(WKSecurityOrigin *origin) {
+  NSString *originString = [NSString stringWithFormat:@"%@://%@", origin.protocol, origin.host];
+
+  if (origin.port > 0 && (([origin.protocol isEqualToString:@"http"] && origin.port != 80) || ([origin.protocol isEqualToString:@"https"] && origin.port != 443))) {
+    originString = [originString stringByAppendingFormat:@":%ld", (long)origin.port];
+  }
+
+  return originString;
+}
+
 NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 
 #if !TARGET_OS_OSX
@@ -584,14 +594,8 @@ RCTAutoInsetsProtocol>
 #endif
 
 - (NSMutableDictionary<NSString *, id> *)baseEventWithScriptMessage:(WKScriptMessage *)message {
-    WKSecurityOrigin *securityOrigin = message.frameInfo.securityOrigin;
-    NSString *protocol = securityOrigin.protocol;
-    NSString *host = securityOrigin.host;
-
-    NSString *messageOriginURL = [NSString stringWithFormat:@"%@://%@", protocol, host];
-    
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-    event[@"url"] = messageOriginURL;
+    event[@"url"] = RNCOriginString(message.frameInfo.securityOrigin);
     return event;
 }
 
@@ -602,6 +606,10 @@ RCTAutoInsetsProtocol>
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message
 {
+  if (!message.frameInfo.isMainFrame) {
+    return;
+  }
+
   if ([message.name isEqualToString:HistoryShimName]) {
     if (_onLoadingFinish) {
       NSMutableDictionary<NSString *, id> *event = [self baseEventWithScriptMessage:message];
@@ -1056,13 +1064,7 @@ RCTAutoInsetsProtocol>
                         initiatedByFrame:(WKFrameInfo *)frame
                                     type:(WKMediaCaptureType)type
                          decisionHandler:(void (^)(WKPermissionDecision decision))decisionHandler {
-  NSString *originString = [NSString stringWithFormat:@"%@://%@", origin.protocol, origin.host];
-
-  if (origin.port > 0 && (([origin.protocol isEqualToString:@"http"] && origin.port != 80) || ([origin.protocol isEqualToString:@"https"] && origin.port != 443))) {
-    originString = [originString stringByAppendingFormat:@":%ld", (long)origin.port];
-  }
-
-  if ([self.cameraPermissionOriginWhitelist containsObject:originString]) {
+  if ([self.cameraPermissionOriginWhitelist containsObject:RNCOriginString(origin)]) {
     decisionHandler(WKPermissionDecisionGrant);
   } else {
     decisionHandler(WKPermissionDecisionDeny);

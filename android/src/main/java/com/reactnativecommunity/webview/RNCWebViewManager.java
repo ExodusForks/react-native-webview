@@ -1508,6 +1508,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
        */
       @Override
       public void onPostMessage(@NonNull WebView view, @NonNull WebMessageCompat message, @NonNull Uri sourceOrigin, boolean isMainFrame, @NonNull JavaScriptReplyProxy replyProxy) {
+        if (!isMainFrame) {
+          return;
+        }
+
         String data;
         try {
           data = message.getData();
