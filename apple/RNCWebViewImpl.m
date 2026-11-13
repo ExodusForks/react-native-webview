@@ -25,6 +25,16 @@ static NSDictionary* customCertificatesForHost;
 // Exodus: Camera permission whitelist for security
 static NSSet *cameraPermissionOriginWhitelist;
 
+static NSString *RNCOriginString(WKSecurityOrigin *origin) {
+  NSString *originString = [NSString stringWithFormat:@"%@://%@", origin.protocol, origin.host];
+
+  if (origin.port > 0 && (([origin.protocol isEqualToString:@"http"] && origin.port != 80) || ([origin.protocol isEqualToString:@"https"] && origin.port != 443))) {
+    originString = [originString stringByAppendingFormat:@":%ld", (long)origin.port];
+  }
+
+  return originString;
+}
+
 NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 
 #if TARGET_OS_IOS
@@ -772,6 +782,10 @@ RCTAutoInsetsProtocol>
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message
 {
+  if (!message.frameInfo.isMainFrame) {
+    return;
+  }
+
   if ([message.name isEqualToString:HistoryShimName]) {
     if (_onLoadingFinish) {
       // Exodus: Use security origin for more secure URL reporting
@@ -1128,14 +1142,8 @@ RCTAutoInsetsProtocol>
 
 // Exodus: Get URL from security origin for message events (more secure than webView.URL)
 - (NSMutableDictionary<NSString *, id> *)baseEventWithScriptMessage:(WKScriptMessage *)message {
-    WKSecurityOrigin *securityOrigin = message.frameInfo.securityOrigin;
-    NSString *protocol = securityOrigin.protocol;
-    NSString *host = securityOrigin.host;
-
-    NSString *messageOriginURL = [NSString stringWithFormat:@"%@://%@", protocol, host];
-
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-    event[@"url"] = messageOriginURL;
+    event[@"url"] = RNCOriginString(message.frameInfo.securityOrigin);
     return event;
 }
 
