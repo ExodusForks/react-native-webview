@@ -102,6 +102,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, assign) BOOL enableApplePay;
 @property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable menuItems;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable suppressMenuItems;
+@property (nonatomic, copy) NSArray<NSString *> * _Nullable cameraPermissionOriginWhitelist;
 @property (nonatomic, copy) RCTDirectEventBlock onCustomMenuSelection;
 #if !TARGET_OS_OSX
 @property (nonatomic, assign) WKDataDetectorTypes dataDetectorTypes;
@@ -131,8 +132,6 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;
-// Exodus: Camera permission whitelist for security
-+ (void)setCameraPermissionOriginWhitelist:(nullable NSArray<NSString *>*)whitelist;
 - (void)postMessage:(NSString *_Nullable)message;
 - (void)injectJavaScript:(NSString *_Nullable)script;
 - (void)goForward;
