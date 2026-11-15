@@ -231,6 +231,7 @@ export interface NativeProps extends ViewProps {
     password: string;
   }>;
   cacheEnabled?: WithDefault<boolean, true>;
+  cameraPermissionOriginWhitelist?: ReadonlyArray<string>;
   incognito?: boolean;
   injectedJavaScript?: string;
   injectedJavaScriptBeforeContentLoaded?: string;

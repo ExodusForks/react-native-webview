@@ -977,6 +977,13 @@ export interface WebViewSharedProps extends ViewProps {
   readonly deeplinkWhitelist?: string[];
 
   /**
+   * Origins (`scheme://host[:port]`, port only when not the scheme default)
+   * allowed to use the camera and microphone. Requests from any other origin
+   * are denied.
+   */
+  readonly cameraPermissionOriginWhitelist?: string[];
+
+  /**
    * Function that allows custom handling of any web view requests. Return
    * `true` from the function to continue loading the request and `false`
    * to stop loading. The `navigationType` is always `other` on android.

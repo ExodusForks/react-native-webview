@@ -377,6 +377,15 @@ auto stringToOnLoadingFinishNavigationTypeEnum(std::string value) {
 
         [_view setSuppressMenuItems:suppressMenuItems];
     }
+    if (oldViewProps.cameraPermissionOriginWhitelist != newViewProps.cameraPermissionOriginWhitelist) {
+        NSMutableArray *cameraPermissionOriginWhitelist = [NSMutableArray array];
+
+        for (const auto &origin: newViewProps.cameraPermissionOriginWhitelist) {
+            [cameraPermissionOriginWhitelist addObject: RCTNSStringFromString(origin)];
+        }
+
+        [_view setCameraPermissionOriginWhitelist:cameraPermissionOriginWhitelist];
+    }
     if (oldViewProps.hasOnOpenWindowEvent != newViewProps.hasOnOpenWindowEvent) {
         if (newViewProps.hasOnOpenWindowEvent) {
             _view.onOpenWindow = [self](NSDictionary* dictionary) {

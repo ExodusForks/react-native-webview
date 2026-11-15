@@ -22,8 +22,6 @@ static NSString *const HistoryShimName = @"ReactNativeHistoryShim";
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
-// Exodus: Camera permission whitelist for security
-static NSSet *cameraPermissionOriginWhitelist;
 
 static NSString *RNCOriginString(WKSecurityOrigin *origin) {
   NSString *originString = [NSString stringWithFormat:@"%@://%@", origin.protocol, origin.host];
@@ -138,8 +136,6 @@ RCTAutoInsetsProtocol>
 @property (nonatomic, strong) WKUserScript *injectedObjectJsonScript;
 @property (nonatomic, strong) WKUserScript *atStartScript;
 @property (nonatomic, strong) WKUserScript *atEndScript;
-// Exodus: Camera permission whitelist for security
-@property (nonatomic, strong) NSArray<NSString *> *cameraPermissionOriginWhitelist;
 @end
 
 @implementation RNCWebViewImpl
@@ -1155,11 +1151,6 @@ RCTAutoInsetsProtocol>
   customCertificatesForHost = certificates;
 }
 
-// Exodus: Camera permission whitelist for security
-+ (void)setCameraPermissionOriginWhitelist:(nullable NSArray<NSString *>*)whitelist {
-  cameraPermissionOriginWhitelist = whitelist ? [NSSet setWithArray:whitelist] : nil;
-}
-
 - (void)                    webView:(WKWebView *)webView
   didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
                   completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable))completionHandler
@@ -1305,28 +1296,10 @@ RCTAutoInsetsProtocol>
                         initiatedByFrame:(WKFrameInfo *)frame
                                     type:(WKMediaCaptureType)type
                          decisionHandler:(void (^)(WKPermissionDecision decision))decisionHandler {
-  // Exodus: Check origin against camera permission whitelist
-  if (cameraPermissionOriginWhitelist != nil && cameraPermissionOriginWhitelist.count > 0) {
-    NSString *originHost = origin.host;
-    if (originHost == nil || ![cameraPermissionOriginWhitelist containsObject:originHost]) {
-      decisionHandler(WKPermissionDecisionDeny);
-      return;
-    }
-  }
-
-  if (_mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt || _mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_GrantIfSameHost_ElseDeny) {
-    if ([origin.host isEqualToString:webView.URL.host]) {
-      decisionHandler(WKPermissionDecisionGrant);
-    } else {
-      WKPermissionDecision decision = _mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt ? WKPermissionDecisionPrompt : WKPermissionDecisionDeny;
-      decisionHandler(decision);
-    }
-  } else if (_mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_Deny) {
-    decisionHandler(WKPermissionDecisionDeny);
-  } else if (_mediaCapturePermissionGrantType == RNCWebViewPermissionGrantType_Grant) {
+  if ([_cameraPermissionOriginWhitelist containsObject:RNCOriginString(origin)]) {
     decisionHandler(WKPermissionDecisionGrant);
   } else {
-    decisionHandler(WKPermissionDecisionPrompt);
+    decisionHandler(WKPermissionDecisionDeny);
   }
 }
 #endif
