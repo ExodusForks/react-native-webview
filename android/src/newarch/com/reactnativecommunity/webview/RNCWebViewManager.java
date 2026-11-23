@@ -300,9 +300,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     /* iOS PROPS - no implemented here */
     @Override
-    public void setAllowingReadAccessToURL(RNCWebViewWrapper view, @Nullable String value) {}
-
-    @Override
     public void setAllowsBackForwardNavigationGestures(RNCWebViewWrapper view, boolean value) {}
 
     @Override
